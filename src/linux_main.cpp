@@ -5,23 +5,9 @@
 // make it easy as pie to compile. Some people may disagree,
 // to that I say, boo!
 //
+// (I wonder if I actually need this file...)
+//
 
-// The external libraries we will be needing.
-#include <GL/glew.h>
-#include <GL/gl.h>
-#include <GLFW/glfw3.h>
-
-// STL stuff.
-#include <stdio.h>
-#include <stdlib.h>
-
-
-// My stuff.
-#include "globals.h"
-#include "audio.h"
-
-// The implementations.
-#include "audio.cpp"
 #include "main.cpp"
 
 int main(int c, char* v[]) {

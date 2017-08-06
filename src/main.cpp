@@ -1,4 +1,21 @@
+// The external libraries we will be needing.
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <GLFW/glfw3.h>
+
+// STL stuff.
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
+#include <math.h>
+
+// My stuff.
+#include "globals.h"
+#include "audio.h"
+
+// The implementations.
+#include "audio.cpp"
 
 void window_close_callback(GLFWwindow* window) {
 	_g.should_quit = true;
@@ -18,14 +35,14 @@ void game_main() {
 	// Initalize window.
 	if (!glfwInit()) {
 		printf("[Init] Failed to initalize GLFW - Window and IO lib.");
-		exit(1);
+		assert(0);
 	}
 
 	_g.window = glfwCreateWindow(_g.window_width, _g.window_height, _g.window_title, NULL, NULL);
 	_g.window_aspect_ratio = _g.window_width / _g.window_height;
 
 	glfwSetWindowCloseCallback(_g.window, window_close_callback);
-glfwSetWindowSizeCallback(_g.window, window_resize_callback);
+	glfwSetWindowSizeCallback(_g.window, window_resize_callback);
 
 	glfwMakeContextCurrent(_g.window);	
 
@@ -34,6 +51,7 @@ glfwSetWindowSizeCallback(_g.window, window_resize_callback);
 
 	if(glewInit()) {
 		printf("[Init] Failed to intalize GLEW - Extension Wrangler\n");
+		assert(0);
 	}
 	
 	// GL default settings.
@@ -48,11 +66,24 @@ glfwSetWindowSizeCallback(_g.window, window_resize_callback);
 	
 	glClearColor(0.75, 0.3, 0.21, 1.0);
 
+	float t = 0.0f;
+
 	while (!_g.should_quit) {
+		t += 0.01f;
 		glfwPollEvents();
 		if (glfwGetKey(_g.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			_g.should_quit = true;
 		}
+
+		glBegin(GL_TRIANGLES);
+		{
+			glColor3f(0.0f, 1.0f, 1.0f);
+			glVertex2f(0, sin(t));
+			glVertex2f(1, 1);
+			glVertex2f(1, -1);
+		}
+		glEnd();
+
 		glfwSwapBuffers(_g.window);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	}
