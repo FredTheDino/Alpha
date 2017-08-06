@@ -4,11 +4,15 @@
 #include <GLFW/glfw3.h>
 
 // STL stuff.
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
 #include <math.h>
+
+// My very own containers
+#include "containers.cpp"
 
 // My stuff.
 #include "globals.h"
@@ -21,8 +25,6 @@ void window_close_callback(GLFWwindow* window) {
 	_g.should_quit = true;
 }
 
-
-
 void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 	_g.window_width = new_width;
 	_g.window_height = new_height;
@@ -32,6 +34,15 @@ void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 }
 
 void game_main() {
+	Array<int> a;
+	push_back(a, 1);
+	push_back(a, 2);
+	push_back(a, 3);
+
+	for (size_t i = 0; i < size(a); i++) {
+		printf("A number in the array (%d) %d\n", i, a[i]);
+	}
+
 	// Initalize window.
 	if (!glfwInit()) {
 		printf("[Init] Failed to initalize GLFW - Window and IO lib.");
