@@ -1,9 +1,9 @@
 #version 330
 
-layout(location=0) in vec2 position;
-layout(location=1) in vec2 uv;
+in vec2 position;
+in vec2 uv;
 
-#define VERT
+#define VERT 1
 #ifdef VERT
 //
 // Vertex Shader
@@ -21,7 +21,7 @@ void main() {
 out vec4 color;
 
 void main() {
-	color = vec4(1, 0, 0, 1);
+	color = vec4(0, 0, 0, 1);
 }
 
 #endif

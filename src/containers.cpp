@@ -30,6 +30,7 @@ struct Array {
 	Array(Allocator* alloc = &default_allocator);
 	~Array();
 
+	Array& operator= (Array &other);
 	Array& operator= (const Array &other);
 	Array& operator= (const char* other);
 
@@ -61,6 +62,28 @@ void clear (const Array<T> &a) {
 	a._size = 0;
 }
 
+// Sets the allocated space.
+template<typename T> 
+void set_capacity (Array<T> &a, uint32_t new_capacity) {
+	assert(new_capacity >= 0);
+	if (new_capacity == a._capacity) {
+		return;
+	}
+
+	if (new_capacity < a._capacity) {
+		resize(a, new_capacity);
+	}
+
+	T* new_data;
+	new_data = (T*) a._alloc->alloc(new_capacity * sizeof(T));
+	memcpy(new_data, a._data, a._size * sizeof(T));
+	// Remember to free... It's kinda important...
+	a._alloc->free(a._data);
+
+	a._data = new_data;
+	a._capacity = new_capacity;
+}
+
 // Grow the size of the array.
 template<typename T> 
 void grow (Array<T> &a, uint32_t min_size = 0) {
@@ -89,27 +112,6 @@ void resize (Array<T> &a, uint32_t new_size) {
 	a._size = new_size;
 }
 
-// Sets the allocated space.
-template<typename T> 
-void set_capacity (Array<T> &a, uint32_t new_capacity) {
-	assert(new_capacity >= 0);
-	if (new_capacity == a._capacity) {
-		return;
-	}
-
-	if (new_capacity < a._capacity) {
-		resize(a, new_capacity);
-	}
-
-	T* new_data;
-	new_data = (T*) a._alloc->alloc(new_capacity * sizeof(T));
-	memcpy(new_data, a._data, a._size * sizeof(T));
-	// Remember to free... It's kinda important...
-	a._alloc->free(a._data);
-
-	a._data = new_data;
-	a._capacity = new_capacity;
-}
 
 // Reserve some space for the array that you know you're going to use.
 template<typename T> 
@@ -150,12 +152,27 @@ Array<T>::~Array() {
 
 template<typename T>
 Array<T>& Array<T>::operator= (const Array &other) {
+	uint32_t n = other._size;
+	set_capacity(*this, n);
+	memcpy(_data, other._data, sizeof(T) * n);
+	_size = n;
+	return *this;
+}
+
+template<typename T>
+Array<T>& Array<T>::operator= (Array &other) {
 	const uint32_t n = other._size;
 	set_capacity(*this, n);
 	memcpy(_data, other._data, sizeof(T) * n);
 	_size = n;
 	return *this;
 }
+
+//
+// ==============================================
+//                   STRING STUFF
+// ==============================================
+//
 
 size_t len(const char* s) {
 	const char* counter = s;

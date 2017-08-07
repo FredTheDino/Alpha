@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <math.h>
+#include <sys/stat.h>
 
 // My very own containers
 #include "containers.cpp"
@@ -18,6 +19,9 @@
 
 // My stuff.
 #include "globals.h"
+
+// Stuff with dependencies.
+#include "hotloader.cpp"
 
 Mesh quad_mesh;
 
@@ -78,7 +82,10 @@ void game_main() {
 	push_back(verticies, Vertex( 0.5,  0.5, 1, 1));
 	push_back(verticies, Vertex(-0.5,  0.5, 0, 1));
 	push_back(verticies, Vertex(-0.5, -0.5, 0, 0));
+
 	quad_mesh = new_mesh(verticies);
+	Shader color_shader;// = new_shader("res/2d_color.glsl", "2d_color");
+	register_hotloadable_asset(hot_loader, &color_shader, "res/2d_color.glsl", "2d_color");
 
 	float t = 0.0f;
 	while (!_g.should_quit) {
@@ -88,6 +95,9 @@ void game_main() {
 			_g.should_quit = true;
 		}
 
+		update_loader(hot_loader);
+
+		use_shader(color_shader);
 		draw_mesh(quad_mesh);
 
 		glBegin(GL_TRIANGLES);

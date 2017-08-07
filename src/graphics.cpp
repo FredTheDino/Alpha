@@ -185,21 +185,20 @@ Shader new_shader(String path, String name) {
 	s.name = name;
 
 	FILE* file = fopen(path._data, "r");
+
 	fseek(file, 0, SEEK_END);
-	size_t size = ftell(file);
+	// Add one for the null termination.
+	size_t size = ftell(file) + 1;
+	
 	reserve(source, size);
 	source._size = size;
 
 	rewind(file);
 
-	// Stream it in.
-	char* source_ptr = source._data;
-	while(fgetc(file) != EOF) {
-		fgets(source_ptr, size, file);
-		source_ptr = source._data + ftell(file);
-	}
+	fread(source._data, 1, size, file);
 
-
+	fclose(file);
+	
 	auto vertex_shader = compile_shader(source, GL_VERTEX_SHADER);
 
 	// Change the def to turn it into the fragment shader.
@@ -209,7 +208,7 @@ Shader new_shader(String path, String name) {
 		if (source[i+2] != 'R') continue;
 		if (source[i+3] != 'T') continue;
 
-		source[i] = '-';
+		source[i] = 'Q';
 		break;
 	}
 	
@@ -228,6 +227,10 @@ Shader new_shader(String path, String name) {
 	}
 
 	return s;
+}
+
+void use_shader(const Shader& s) {
+	glUseProgram(s.program);
 }
 
 void delete_shader(Shader s) {
