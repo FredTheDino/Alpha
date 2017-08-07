@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 // STL stuff.
+#include <typeinfo>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,13 +14,12 @@
 
 // My very own containers
 #include "containers.cpp"
+#include "graphics.cpp"
 
 // My stuff.
 #include "globals.h"
-#include "audio.h"
 
-// The implementations.
-#include "audio.cpp"
+Mesh quad_mesh;
 
 void window_close_callback(GLFWwindow* window) {
 	_g.should_quit = true;
@@ -34,15 +34,6 @@ void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 }
 
 void game_main() {
-	Array<int> a;
-	push_back(a, 1);
-	push_back(a, 2);
-	push_back(a, 3);
-
-	for (size_t i = 0; i < size(a); i++) {
-		printf("A number in the array (%d) %d\n", i, a[i]);
-	}
-
 	// Initalize window.
 	if (!glfwInit()) {
 		printf("[Init] Failed to initalize GLFW - Window and IO lib.");
@@ -77,14 +68,27 @@ void game_main() {
 	
 	glClearColor(0.75, 0.3, 0.21, 1.0);
 
-	float t = 0.0f;
+	Array<Vertex> verticies;
+	reserve(verticies, 6);
 
+	push_back(verticies, Vertex(-0.5, -0.5, 0, 0));
+	push_back(verticies, Vertex( 0.5, -0.5, 1, 0));
+	push_back(verticies, Vertex( 0.5,  0.5, 1, 1));
+
+	push_back(verticies, Vertex( 0.5,  0.5, 1, 1));
+	push_back(verticies, Vertex(-0.5,  0.5, 0, 1));
+	push_back(verticies, Vertex(-0.5, -0.5, 0, 0));
+	quad_mesh = new_mesh(verticies);
+
+	float t = 0.0f;
 	while (!_g.should_quit) {
 		t += 0.01f;
 		glfwPollEvents();
 		if (glfwGetKey(_g.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			_g.should_quit = true;
 		}
+
+		draw_mesh(quad_mesh);
 
 		glBegin(GL_TRIANGLES);
 		{
