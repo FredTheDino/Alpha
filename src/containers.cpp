@@ -3,16 +3,40 @@
 // C++ std library, cause why not...
 //
 
+namespace alloc {
+	void* default_alloc(size_t size) {
+		return malloc(size);
+	}
+
+	void default_free(void* ptr) {
+		free(ptr);
+	}
+}
+
+struct Allocator {
+	Allocator(void*(*_alloc)(size_t), void (*_free)(void*)) {
+		this->alloc = _alloc;
+		this->free = _free;
+	}
+	void* (*alloc)(size_t);
+	void  (*free)(void*);
+};
+
+Allocator default_allocator(alloc::default_alloc, alloc::default_free);
+
 template<typename T>
 struct Array {
-	Array();
+	Array(const char* s, Allocator* alloc = &default_allocator);
+	Array(Allocator* alloc = &default_allocator);
 	~Array();
 
 	Array& operator= (const Array &other);
+	Array& operator= (const char* other);
 
 	T& operator[] (uint32_t i);
 	const T& operator[] (uint32_t i) const;
 
+	Allocator* _alloc;
 	uint32_t _size;
 	uint32_t _capacity;
 	T* _data;
@@ -78,11 +102,10 @@ void set_capacity (Array<T> &a, uint32_t new_capacity) {
 	}
 
 	T* new_data;
-	printf("Memory allocation for array\n");
-	new_data = (T*) malloc(new_capacity * sizeof(T));
+	new_data = (T*) a._alloc->alloc(new_capacity * sizeof(T));
 	memcpy(new_data, a._data, a._size * sizeof(T));
 	// Remember to free... It's kinda important...
-	free(a._data);
+	a._alloc->free(a._data);
 
 	a._data = new_data;
 	a._capacity = new_capacity;
@@ -113,15 +136,16 @@ void pop_back (Array<T> &a) {
 }
 
 template<typename T>
-Array<T>::Array() {
+Array<T>::Array(Allocator* alloc) {
 	_size = 0;
 	_capacity = 4;
-	_data = (T*) malloc(_capacity * sizeof(T));
+	_alloc = alloc;
+	_data = (T*) _alloc->alloc(_capacity * sizeof(T));
 }
 
 template<typename T>
 Array<T>::~Array() {
-	free(_data);
+	_alloc->free(_data);
 }
 
 template<typename T>
@@ -129,6 +153,43 @@ Array<T>& Array<T>::operator= (const Array &other) {
 	const uint32_t n = other._size;
 	set_capacity(*this, n);
 	memcpy(_data, other._data, sizeof(T) * n);
+	_size = n;
+	return *this;
+}
+
+size_t len(const char* s) {
+	const char* counter = s;
+	while (true) {
+		if (*counter == '\0') break;
+		counter++;
+	}
+	// Pointer math!
+	size_t len = (counter - s) + 1;
+	return len;
+}
+
+template<typename T>
+Array<T>::Array(const char* s, Allocator* alloc) {
+	assert(typeid(*_data) == typeid(*s));
+
+	_alloc = alloc;
+
+	size_t n = len(s);
+	_data = (char*) _alloc->alloc(n * sizeof(char));
+	memcpy(_data, s, sizeof(T) * n);
+	_size = n;
+	_capacity = n;
+}
+
+template<typename T>
+Array<T>& Array<T>::operator= (const char* other) {
+	assert(typeid(_data) == typeid(*other));
+
+	size_t n = len(other);
+
+	set_capacity(*this, n);
+	memcpy(_data, other, sizeof(T) * n);
+	_size = n;
 	return *this;
 }
 
@@ -141,7 +202,9 @@ T& Array<T>::operator[] (uint32_t i) {
 
 template<typename T>
 const T& Array<T>::operator[] (uint32_t i) const {
-	assert(i < 0);
-	assert(i >= _size);
+	assert(i >= 0);
+	assert(i <= _size);
 	return _data[i];
 }
+
+typedef Array<char> String;

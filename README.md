@@ -1,4 +1,7 @@
 # Things to do:
+
+Think about what a hash map is and how it should work.
+
 - OpenGL custom pipeline
 - Hotloader
 - OpenAL static linking
