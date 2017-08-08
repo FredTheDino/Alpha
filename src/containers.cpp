@@ -153,6 +153,7 @@ Array<T>::~Array() {
 template<typename T>
 Array<T>& Array<T>::operator= (const Array &other) {
 	uint32_t n = other._size;
+	_alloc = other._alloc;
 	set_capacity(*this, n);
 	memcpy(_data, other._data, sizeof(T) * n);
 	_size = n;

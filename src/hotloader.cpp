@@ -11,7 +11,7 @@ struct HotLoadableAsset {
 	void* asset;
 	ASSET_TYPES type;
 
-	String path;
+	const char* path;
 	short timer = 0;
 	long last_edit_time;
 };
@@ -29,7 +29,7 @@ void update_loader(HotLoader& loader) {
 	struct stat attrib;
 	for (int i = 0; i < size(loader.assets); i++) {
 		HotLoadableAsset& asset = loader.assets[i];
-		auto success = stat(asset.path._data, &attrib);
+		auto success = stat(asset.path, &attrib);
 		if (asset.last_edit_time == attrib.st_ctime) continue;
 		if (asset.timer != loader.delay) {
 			asset.timer++;
@@ -51,10 +51,10 @@ void update_loader(HotLoader& loader) {
 	}
 }
 
-void register_hotloadable_asset(HotLoader& loader, Shader* _asset, String path, String name) {
+void register_hotloadable_asset(HotLoader& loader, Shader* _asset, const char* path, const char* name) {
 	struct stat attrib;
 	// Not sure about the return code...
-	auto error = stat(path._data, &attrib);
+	auto error = stat(path, &attrib);
 	if (error) {
 		printf("Failiure!\n");
 		return;
@@ -63,7 +63,7 @@ void register_hotloadable_asset(HotLoader& loader, Shader* _asset, String path, 
 	HotLoadableAsset asset;
 
 	asset.asset = (void*) _asset;
-	asset.path  = path;
+	asset.path = path;
 	asset.type  = ASSET_TYPES::SHADER;
 	asset.last_edit_time = attrib.st_ctime;
 
