@@ -13,8 +13,14 @@
 #include <math.h>
 #include <sys/stat.h>
 
+#include <string>
+#include <vector>
+
+typedef std::string String;
+#define Array std::vector
+
 // My very own containers
-#include "containers.cpp"
+//#include "containers.cpp"
 #include "graphics.cpp"
 
 // My stuff.
@@ -73,15 +79,15 @@ void game_main() {
 	glClearColor(0.75, 0.3, 0.21, 1.0);
 
 	Array<Vertex> verticies;
-	reserve(verticies, 6);
+	verticies.reserve(6);
 
-	push_back(verticies, Vertex(-0.5, -0.5, 0, 0));
-	push_back(verticies, Vertex( 0.5, -0.5, 1, 0));
-	push_back(verticies, Vertex( 0.5,  0.5, 1, 1));
+	verticies.push_back(Vertex(-0.5, -0.5, 0, 0));
+	verticies.push_back(Vertex( 0.5, -0.5, 1, 0));
+	verticies.push_back(Vertex( 0.5,  0.5, 1, 1));
 
-	push_back(verticies, Vertex( 0.5,  0.5, 1, 1));
-	push_back(verticies, Vertex(-0.5,  0.5, 0, 1));
-	push_back(verticies, Vertex(-0.5, -0.5, 0, 0));
+	verticies.push_back(Vertex( 0.5,  0.5, 1, 1));
+	verticies.push_back(Vertex(-0.5,  0.5, 0, 1));
+	verticies.push_back(Vertex(-0.5, -0.5, 0, 0));
 
 	quad_mesh = new_mesh(verticies);
 	Shader color_shader;// = new_shader("res/2d_color.glsl", "2d_color");

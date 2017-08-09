@@ -71,7 +71,7 @@ struct Texture {
 };
 
 struct Shader {
-	GLuint program; 
+	GLuint program = -1; 
 	String name;
 };  
 
@@ -81,13 +81,13 @@ Mesh new_mesh(Array<Vertex> const& verticies) {
 	glGenVertexArrays(1, &m.vao);
 	glGenBuffers(1, &m.vbo);
 
-	m.draw_count = size(verticies);
+	m.draw_count = verticies.size();
 
 	glBindVertexArray(m.vao);
 	{
 		// Stream over the data
 		glBindBuffer(GL_ARRAY_BUFFER, m.vbo);
-		glBufferData(GL_ARRAY_BUFFER, size(verticies) * sizeof(Vertex),
+		glBufferData(GL_ARRAY_BUFFER, verticies.size() * sizeof(Vertex),
 				&verticies[0], GL_STATIC_DRAW);
 
 		// Position
@@ -148,7 +148,7 @@ GLuint compile_shader(String const& source, GLenum shader_type) {
 		return -1;
 	}
 
-	const GLchar* src = (GLchar*) source._data;
+	const GLchar* src = (GLchar*) source.c_str();
 	glShaderSource(shader, 1, &src, NULL);
 	glCompileShader(shader);
 
@@ -184,18 +184,17 @@ Shader new_shader(String path, String name) {
 	Shader s;
 	s.name = name;
 
-	FILE* file = fopen(path._data, "r");
+	FILE* file = fopen(path.c_str(), "r");
 
 	fseek(file, 0, SEEK_END);
 	// Add one for the null termination.
 	size_t size = ftell(file) + 1;
 	
-	reserve(source, size);
-	source._size = size;
+	source.resize(size);
 
 	rewind(file);
 
-	fread(source._data, 1, size, file);
+	fread(&source[0], 1, size, file);
 
 	fclose(file);
 	

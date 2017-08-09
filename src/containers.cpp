@@ -26,6 +26,7 @@ Allocator default_allocator(alloc::default_alloc, alloc::default_free);
 
 template<typename T>
 struct Array {
+	Array(const Array<T>& other);
 	Array(const char* s, Allocator* alloc = &default_allocator);
 	Array(Allocator* alloc = &default_allocator);
 	~Array();
@@ -135,6 +136,15 @@ template<typename T>
 void pop_back (Array<T> &a) {
 	assert(a._size != 0);
 	a._size--;
+}
+
+template<typename T>
+Array<T>::Array(const Array<T>& other) {
+	uint32_t n = other._size;
+	_alloc = other._alloc;
+	set_capacity(*this, n);
+	memcpy(_data, other._data, sizeof(T) * n);
+	_size = n;
 }
 
 template<typename T>

@@ -21,7 +21,7 @@ void main() {
 out vec4 color;
 
 void main() {
-	color = vec4(0, 0, 0, 1);
+	color = vec4(gl_FragCoord.x, 0.2, 0.5, 1);
 }
 
 #endif
