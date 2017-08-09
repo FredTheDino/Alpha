@@ -13,11 +13,16 @@
 #include <math.h>
 #include <sys/stat.h>
 
+// I am bound by std...
 #include <string>
 #include <vector>
 
 typedef std::string String;
 #define Array std::vector
+
+// STB image.
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 // My very own containers
 //#include "containers.cpp"
@@ -81,17 +86,20 @@ void game_main() {
 	Array<Vertex> verticies;
 	verticies.reserve(6);
 
-	verticies.push_back(Vertex(-0.5, -0.5, 0, 0));
-	verticies.push_back(Vertex( 0.5, -0.5, 1, 0));
-	verticies.push_back(Vertex( 0.5,  0.5, 1, 1));
+	verticies.push_back(Vertex(-0.5, -0.5, 0, 1));
+	verticies.push_back(Vertex( 0.5, -0.5, 1, 1));
+	verticies.push_back(Vertex( 0.5,  0.5, 1, 0));
 
-	verticies.push_back(Vertex( 0.5,  0.5, 1, 1));
-	verticies.push_back(Vertex(-0.5,  0.5, 0, 1));
-	verticies.push_back(Vertex(-0.5, -0.5, 0, 0));
+	verticies.push_back(Vertex( 0.5,  0.5, 1, 0));
+	verticies.push_back(Vertex(-0.5,  0.5, 0, 0));
+	verticies.push_back(Vertex(-0.5, -0.5, 0, 1));
 
 	quad_mesh = new_mesh(verticies);
 	Shader color_shader;// = new_shader("res/2d_color.glsl", "2d_color");
 	register_hotloadable_asset(hot_loader, &color_shader, "res/2d_color.glsl", "2d_color");
+
+	Texture mario;
+	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 
 	float t = 0.0f;
 	while (!_g.should_quit) {
@@ -104,6 +112,9 @@ void game_main() {
 		update_loader(hot_loader);
 
 		use_shader(color_shader);
+		bind_texture(mario, 0);
+		GLint loc = glGetUniformLocation(color_shader.program, "sprite");
+		glUniform1i(loc, 0);
 		draw_mesh(quad_mesh);
 
 		glBegin(GL_TRIANGLES);
@@ -118,4 +129,7 @@ void game_main() {
 		glfwSwapBuffers(_g.window);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	}
+
+	delete_texture(mario);
+	delete_shader(color_shader);
 }

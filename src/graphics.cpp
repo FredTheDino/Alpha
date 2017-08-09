@@ -44,7 +44,6 @@ float dot (const Vec2& a, const Vec2& b) {
 	return a.x * b.y + b.x * a.y;
 }
 
-
 struct Vertex {
 	Vec2 position;
 	Vec2 uv;
@@ -74,6 +73,10 @@ struct Shader {
 	GLuint program = -1; 
 	String name;
 };  
+
+// 
+// Start of mesh stuff.
+//
 
 Mesh new_mesh(Array<Vertex> const& verticies) {
 	Mesh m;
@@ -116,6 +119,10 @@ void delete_mesh(Mesh m) {
 	glDeleteVertexArrays(1, &m.vao);
 	glDeleteBuffers(1, &m.vbo);
 }
+
+//
+// Start of shader stuff,
+//
 
 bool check_glsl_error(GLuint target, GLenum flag, const char* message, bool is_program = false) {
 	GLint success = 1;
@@ -236,3 +243,136 @@ void delete_shader(Shader s) {
 	glDeleteProgram(s.program);
 }
 
+
+//
+// Start of texture stuff.
+//
+
+//
+// These are all the supported image formats. (We will find these outselves)
+// So don't include the file suffix in the engine.
+//
+#define array_len(A) (sizeof( A )/sizeof( A [0]))
+String supported_texture_formats[] = {".jpg", ".png", ".tga", ".psd", ".gif"};
+
+
+String find_texture_file(String path) {
+	String file_path;
+	for (int i = 0; i < array_len(supported_texture_formats); i++) {
+		// 
+		// @Speed, we dont need to re copy the entire file name,
+		// we could just copy over the last chars since each
+		// file suffix is the same length
+		//
+		file_path = path + supported_texture_formats[i];
+		if (access(file_path.c_str(), F_OK) == 0) {
+			return file_path;
+		}
+	}
+
+	printf("[Graphics.cpp] Failed to load image '%s', the file could not be found. Supported file formats:", path.c_str());
+	for (int i = 0; i < array_len(supported_texture_formats); i++) {
+		printf(" %s", supported_texture_formats[i].c_str());
+	}
+
+	return "";
+}
+
+Texture new_texture(
+		String path, bool linear_filtering = true, 
+		int sprites_x = 0, int sprites_y = 0, 
+		bool use_mipmaps = false) {
+
+	String file_path = find_texture_file(path);
+	FILE* file = fopen(file_path.c_str(), "r");
+	assert(file);
+	
+	int width, height, num_channels;
+	unsigned char* data = stbi_load_from_file(file, &width, &height, &num_channels, 4);
+	
+	// Done with the file.
+	fclose(file);
+
+	GLuint id;
+	glGenTextures(1, &id);
+
+	glBindTexture(GL_TEXTURE_2D, id);
+
+	GLenum filter = linear_filtering ? GL_LINEAR : GL_NEAREST;
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	if (use_mipmaps) {
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	GLenum format = GL_RGBA;
+	if (num_channels == 1) {
+		format = GL_RED;
+	} else if (num_channels == 2) {
+		format = GL_RED | GL_GREEN;
+	} else if (num_channels == 3) {
+		format = GL_RGB;
+	}
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+	Texture t;
+	t.texture_id = id;
+	t.w = width;
+	t.h = height;
+	t.sprites_x = sprites_x;
+	t.sprites_y = sprites_y;
+
+	return t;
+}
+
+bool update_texture(Texture& t, String path) {
+	// Can't do this cause the hotloader wants
+	// to know exactyly which file it is, so
+	// here the path isn't checked...
+	FILE* file = fopen(path.c_str(), "r");
+	if (file == 0) {
+		// Don't sweat it if we can't find the file.
+		return false;
+	}
+
+	int width, height, num_channels;
+	unsigned char* data = stbi_load_from_file(file, &width, &height, &num_channels, 4);
+
+	if (width == 0 && height == 0) {
+		return false;
+	}
+	
+	// Done with the file.
+	fclose(file);
+
+	glBindTexture(GL_TEXTURE_2D, t.texture_id);
+
+	GLenum format = GL_RGBA;
+	if (num_channels == 1) {
+		format = GL_RED;
+	} else if (num_channels == 2) {
+		format = GL_RED | GL_GREEN;
+	} else if (num_channels == 3) {
+		format = GL_RGB;
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+	t.w = width;
+	t.h = height;
+
+	return true;
+}
+
+void delete_texture(Texture& t) {
+	glDeleteTextures(1, &t.texture_id);
+}
+
+void bind_texture(Texture& t, int texture_slot) {
+	glActiveTexture(GL_TEXTURE0 + texture_slot);
+	glBindTexture(GL_TEXTURE_2D, t.texture_id);
+}
