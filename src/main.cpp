@@ -16,9 +16,11 @@
 // I am bound by std...
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 typedef std::string String;
 #define Array std::vector
+#define HashMap std::unordered_map
 
 // STB image.
 #define STB_IMAGE_IMPLEMENTATION
@@ -27,6 +29,7 @@ typedef std::string String;
 // My very own containers
 //#include "containers.cpp"
 #include "graphics.cpp"
+#include "input.cpp"
 
 // My stuff.
 #include "globals.h"
@@ -46,6 +49,32 @@ void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 	_g.window_aspect_ratio = (float) new_width / new_height;
 
 	glViewport(0, 0, new_width, new_height);
+}
+
+// Setup the offscreen frame buffer.
+
+struct PPO {
+	GLuint buffer;
+	Texture texture;
+	GLuint depth;
+} ppo;
+
+void init_ppo() {
+	glGenFramebuffers(1, &ppo.buffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
+
+	glGenTextures(1, &ppo.texture.texture_id);
+	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _g.window_width, _g.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glGenRenderbuffers(1, &ppo.depth);
+	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _g.window_width, _g.window_height);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ppo.texture.texture_id, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ppo.depth);
 }
 
 void game_main() {
@@ -83,27 +112,13 @@ void game_main() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	// Setup the offscreen frame buffer.
-	GLuint post_processing_buffer;
-	glGenFramebuffers(1, &post_processing_buffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, post_processing_buffer);
-
-	GLuint post_processing_texture;
-	glGenTextures(1, &post_processing_texture);
-	glBindTexture(GL_TEXTURE_2D, post_processing_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _g.window_width, _g.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	
-	GLuint post_processing_depth;
-	glGenRenderbuffers(1, &post_processing_depth);
-	glBindRenderbuffer(GL_RENDERBUFFER, post_processing_depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _g.window_width, _g.window_height);
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, post_processing_texture, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, post_processing_depth);
+	init_ppo();
 
 	glClearColor(0.75, 0.3, 0.21, 1.0);
+
+	// Load the input map!
+	
+	parse_input(input_map, "res/input.map");
 
 	Array<Vertex> verticies;
 	verticies.reserve(6);
@@ -126,8 +141,9 @@ void game_main() {
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 
 	float t = 0.0f;
+	glfwSetTime(0);
 	while (!_g.should_quit) {
-		t += 0.05f;
+		t = glfwGetTime();
 		glfwPollEvents();
 		if (glfwGetKey(_g.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			_g.should_quit = true;
@@ -135,10 +151,8 @@ void game_main() {
 
 		update_loader(hot_loader);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, post_processing_buffer);
-		glViewport(0, 0, _g.window_width, _g.window_height);
+		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 		
-		glClearColor(0.0, 0.8, 0.21, 1.0);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -153,7 +167,9 @@ void game_main() {
 		GLint y_loc = glGetUniformLocation(color_shader.program, "y");
 		GLint color_scale_loc = glGetUniformLocation(color_shader.program, "color_scale");
 
-		glUniform1f(x_loc, 0.2);
+		float x = sin(t);
+
+		glUniform1f(x_loc, x);
 		glUniform1f(y_loc, -0.2);
 		glUniform1f(color_scale_loc, 0.1);
 
@@ -168,19 +184,13 @@ void game_main() {
 		draw_mesh(quad_mesh);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, _g.window_width, _g.window_height);
 
 		GLuint screen_location = glGetUniformLocation(post_process_shader.program, "screen");
 		use_shader(post_process_shader);
 		glUniform1i(screen_location, 0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, post_processing_texture);
+		bind_texture(ppo.texture, 0);
 
 		glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), t);
-
-		//
-		// SPOILER! The framebuffers aren't working, should poorbably fix that...
-		//
 
 		draw_mesh(quad_mesh);
 
