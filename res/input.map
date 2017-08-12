@@ -1,5 +1,9 @@
 # This is a comment!
 exit K escape
-exit K o
-exit K e
-some_other J UP
+
+left  K a
+right K d
+
+some_other J LEFT_UP
+left  J LEFT_LEFT
+right J LEFT_RIGHT

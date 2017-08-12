@@ -99,6 +99,8 @@ void game_main() {
 
 	glfwSetWindowCloseCallback(_g.window, window_close_callback);
 	glfwSetWindowSizeCallback(_g.window, window_resize_callback);
+	// This doesn't seem to work properly
+	//glfwSetJoystickCallback(controller_connect_callback);
 
 	glfwMakeContextCurrent(_g.window);	
 
@@ -127,8 +129,7 @@ void game_main() {
 	glClearColor(0.75, 0.3, 0.21, 1.0);
 
 	// Load the input map!
-	
-	parse_input(input_map, "res/input.map");
+	register_hotloadable_asset(hot_loader, &input_map, "res/input.map");
 
 	Array<Vertex> verticies;
 	verticies.reserve(6);
@@ -151,17 +152,22 @@ void game_main() {
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 
 	float t = 0.0f;
+	float delta = 0.0f;
 	glfwSetTime(0);
 	while (!_g.should_quit) {
-		t = glfwGetTime();
+		float new_t = glfwGetTime();
+		delta = t - new_t;
+		t = new_t;
+
 		glfwPollEvents();
-		if (glfwGetKey(_g.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-			_g.should_quit = true;
-		}
 
 		update_loader(hot_loader);
 
 		update_input();
+
+		if (is_down("exit")) {
+			_g.should_quit = true;
+		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 		
@@ -188,7 +194,15 @@ void game_main() {
 		glUniform1f(loc, sin(t));
 		draw_mesh(quad_mesh);
 
-		glUniform1f(x_loc, -0.2);
+
+		static float x2 = 0;
+		if (is_down("left")) {
+			x2 -= delta * value("left");
+		}
+		if (is_down("right")) {
+			x2 += delta * value("right");
+		}
+		glUniform1f(x_loc, x2);
 		glUniform1f(y_loc, 0.2);
 		glUniform1f(color_scale_loc, 1.0f);
 

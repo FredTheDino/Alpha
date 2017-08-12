@@ -6,6 +6,7 @@
 enum ASSET_TYPES {
 	SHADER,
 	IMAGE,
+	INPUT_MAP,
 };
 
 struct HotLoadableAsset {
@@ -63,6 +64,16 @@ void update_loader(HotLoader& loader) {
 			} else {
 				asset.last_edit_time -= 10;
 			}
+		} else if (asset.type == ASSET_TYPES::INPUT_MAP) {
+			InputMap* map = (InputMap*) asset.asset;
+			InputMap new_map;
+			if (parse_input_file(new_map, asset.path)) {
+				clean_input(*map);
+				*map = new_map;
+				printf("[Hotloader.cpp] Input reloaded (%s)\n", asset.path.c_str());
+			} else {
+				printf("[Hotloader.cpp] Failed to reload input file\n");
+			}
 		} else {
 			printf("[HotLoader.cpp] Trying to update unsupported asset type.\n");
 		}
@@ -74,7 +85,7 @@ void register_hotloadable_asset(HotLoader& loader, Shader* _asset, String path, 
 	// not sure about the return code...
 	auto error = stat(path.c_str(), &attrib);
 	if (error) {
-		printf("[Hotloader.cpp] Failed to add shader asset, '%s'!\n", path.c_str());
+		printf("[Hotloader.cpp] Failed to add shader asset '%s'!\n", path.c_str());
 		return;
 	}
 
@@ -101,7 +112,7 @@ void register_hotloadable_asset(HotLoader& loader,
 	// not sure about the return code...
 	auto error = stat(file_path.c_str(), &attrib);
 	if (error) {
-		printf("[Hotloader.cpp] Failed to add image asset, '%s'!\n", file_path.c_str());
+		printf("[Hotloader.cpp] Failed to add image asset '%s'!\n", file_path.c_str());
 		return;
 	}
 
@@ -113,6 +124,27 @@ void register_hotloadable_asset(HotLoader& loader,
 	asset.last_edit_time = attrib.st_ctime;
 
 	*_asset = new_texture(path, linear_filtering, sprites_x, sprites_y, use_mipmaps);
+
+	register_asset(loader, asset);
+}
+
+void register_hotloadable_asset(HotLoader& loader, InputMap* map, String path) {
+	struct stat attrib;
+	// not sure about the return code...
+	auto error = stat(path.c_str(), &attrib);
+	if (error) {
+		printf("[Hotloader.cpp] Failed to add input.map asset '%s'!\n", path.c_str());
+		return;
+	}
+
+	HotLoadableAsset asset;
+
+	asset.asset = (void*) map;
+	asset.path = path;
+	asset.type  = ASSET_TYPES::INPUT_MAP;
+	asset.last_edit_time = attrib.st_ctime;
+
+	parse_input_file(*map, path);
 
 	register_asset(loader, asset);
 }

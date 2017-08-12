@@ -243,6 +243,10 @@ void delete_shader(Shader s) {
 	glDeleteProgram(s.program);
 }
 
+GLuint get_uniform_loc(const Shader s, String name) {
+	return glGetUniformLocation(s.program, name.c_str());
+}
+
 
 //
 // Start of texture stuff.
