@@ -10,6 +10,7 @@ uniform float time;
 //
 in vec2 position;
 in vec2 uv;
+
 out vec2 fragUV;
 
 void main() {
@@ -26,13 +27,17 @@ in vec2 fragUV;
 
 out vec4 color;
 
-void main() {
-	
-	vec2 uv = fragUV + 0.005 * vec2(sin(time + 20 * fragUV.x), cos(time + 50 * fragUV.y));
+int pixels_x = 300;
+int pixels_y = 300;
 
+void main() {
+	// vec2 uv = vec2(floor(fragUV.x * pixels_x) / pixels_x, floor(fragUV.y * pixels_y) / pixels_y);
+	vec2 uv = fragUV;
 	vec4 texel;
 	texel = texture(screen, uv);
-	color = texel * (sin(0.2342354 * time) * 0.5 + 0.5);
+
+	float gamma = 1.1;
+	color = vec4((texel.r - 0.5) * gamma + 0.5, (texel.g - 0.5) * gamma + 0.5, (texel.b - 0.5) * gamma + 0.5, 1.0);
 	color.w = 1.0;
 }
 

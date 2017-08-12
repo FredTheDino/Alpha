@@ -458,14 +458,12 @@ bool parse_input_file(InputMap& map, String path) {
 		size_t i = find_next_nonspace(line);
 		char c = line[0];
 		if (!check_if_valid(c)) {
-			printf("Empty line: %d\n", line_number);
 			continue;
 		}
 
 		i = find_next_space(line);
 		c = line[i];
 		if (!check_if_valid(c)) {
-			printf("Only name: %d\n", line_number);
 			continue;
 		}
 
@@ -513,7 +511,6 @@ bool parse_input_file(InputMap& map, String path) {
 		}
 		
 		action.input_name = name;
-		printf("Added action: %s, k=%d, key: %d\n", name.c_str(), action.is_keyboard, action.input);
 		add_if_not_added(map, name);
 		map.actions.push_back(action);
 	}

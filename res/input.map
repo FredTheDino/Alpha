@@ -4,6 +4,9 @@ exit K escape
 left  K a
 right K d
 
+sound K h
+sound J CROSS
+
 some_other J LEFT_UP
 left  J LEFT_LEFT
 right J LEFT_RIGHT

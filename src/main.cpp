@@ -2,6 +2,8 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
+#include <AL/al.h>
+#include <AL/alc.h>
 
 // STL stuff.
 #include <typeinfo>
@@ -13,13 +15,16 @@
 #include <assert.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <string.h>
 
 // I am bound by std...
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <stack>
 
 typedef std::string String;
+#define Stack std::stack
 #define Array std::vector
 #define HashMap std::unordered_map
 
@@ -34,7 +39,7 @@ typedef std::string String;
 //#include "containers.cpp"
 #include "graphics.cpp"
 #include "input.cpp"
-
+#include "audio.cpp"
 
 // Stuff with dependencies.
 #include "hotloader.cpp"
@@ -128,6 +133,14 @@ void game_main() {
 
 	glClearColor(0.75, 0.3, 0.21, 1.0);
 
+	/////////////
+	// INIT AL //
+	/////////////
+	init_audio();
+
+	Sound ha;
+	register_hotloadable_asset(hot_loader, &ha, "res/a.wav");
+
 	// Load the input map!
 	register_hotloadable_asset(hot_loader, &input_map, "res/input.map");
 
@@ -151,6 +164,7 @@ void game_main() {
 	Texture mario;
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 
+
 	float t = 0.0f;
 	float delta = 0.0f;
 	glfwSetTime(0);
@@ -164,9 +178,15 @@ void game_main() {
 		update_loader(hot_loader);
 
 		update_input();
+		update_audio();
 
 		if (is_down("exit")) {
 			_g.should_quit = true;
+		}
+
+		if (pressed("sound")) {
+			printf("Trying to play sound...\n");
+			play_sound(ha, SFX);
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
@@ -227,4 +247,6 @@ void game_main() {
 
 	delete_texture(mario);
 	delete_shader(color_shader);
+
+	destroy_audio();
 }

@@ -7,6 +7,7 @@ enum ASSET_TYPES {
 	SHADER,
 	IMAGE,
 	INPUT_MAP,
+	AUDIO,
 };
 
 struct HotLoadableAsset {
@@ -73,6 +74,14 @@ void update_loader(HotLoader& loader) {
 				printf("[Hotloader.cpp] Input reloaded (%s)\n", asset.path.c_str());
 			} else {
 				printf("[Hotloader.cpp] Failed to reload input file\n");
+			}
+		} else if (asset.type == ASSET_TYPES::AUDIO) {
+			auto sound = (Sound*) asset.asset;
+			bool success = update_sound(*sound, asset.path);
+			if (success) {
+				printf("[Hotloader.cpp] Sound reloaded (%s)\n", asset.path.c_str());
+			} else {
+				asset.last_edit_time -= 10;
 			}
 		} else {
 			printf("[HotLoader.cpp] Trying to update unsupported asset type.\n");
@@ -148,3 +157,25 @@ void register_hotloadable_asset(HotLoader& loader, InputMap* map, String path) {
 
 	register_asset(loader, asset);
 }
+
+void register_hotloadable_asset(HotLoader& loader, Sound* s, String path) {
+	struct stat attrib;
+	// not sure about the return code...
+	auto error = stat(path.c_str(), &attrib);
+	if (error) {
+		printf("[Hotloader.cpp] Failed to add sound asset '%s'!\n", path.c_str());
+		return;
+	}
+
+	HotLoadableAsset asset;
+
+	asset.asset = (void*) s;
+	asset.path = path;
+	asset.type  = ASSET_TYPES::AUDIO;
+	asset.last_edit_time = attrib.st_ctime;
+
+	*s = new_sound(path);
+
+	register_asset(loader, asset);
+}
+
