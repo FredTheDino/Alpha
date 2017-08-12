@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <assert.h>
 #include <math.h>
@@ -26,18 +27,25 @@ typedef std::string String;
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+// My stuff.
+#include "globals.h"
+
 // My very own containers
 //#include "containers.cpp"
 #include "graphics.cpp"
 #include "input.cpp"
 
-// My stuff.
-#include "globals.h"
 
 // Stuff with dependencies.
 #include "hotloader.cpp"
 
 Mesh quad_mesh;
+
+struct PPO {
+	GLuint buffer;
+	Texture texture;
+	GLuint depth;
+} ppo;
 
 void window_close_callback(GLFWwindow* window) {
 	_g.should_quit = true;
@@ -48,16 +56,18 @@ void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 	_g.window_height = new_height;
 	_g.window_aspect_ratio = (float) new_width / new_height;
 
+	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
+	glViewport(0, 0, new_width, new_height);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _g.window_width, _g.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _g.window_width, _g.window_height);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, new_width, new_height);
 }
 
 // Setup the offscreen frame buffer.
-
-struct PPO {
-	GLuint buffer;
-	Texture texture;
-	GLuint depth;
-} ppo;
 
 void init_ppo() {
 	glGenFramebuffers(1, &ppo.buffer);
@@ -150,6 +160,8 @@ void game_main() {
 		}
 
 		update_loader(hot_loader);
+
+		update_input();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 		

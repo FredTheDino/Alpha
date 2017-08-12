@@ -32,7 +32,7 @@ void main() {
 
 	vec4 texel;
 	texel = texture(screen, uv);
-	color = texel * (sin(time) * 0.5 + 0.5);
+	color = texel * (sin(0.2342354 * time) * 0.5 + 0.5);
 	color.w = 1.0;
 }
 
