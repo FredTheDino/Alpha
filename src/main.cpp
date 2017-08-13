@@ -185,7 +185,6 @@ void game_main() {
 		}
 
 		if (pressed("sound")) {
-			printf("Trying to play sound...\n");
 			play_sound(ha, SFX);
 		}
 
