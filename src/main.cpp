@@ -11,9 +11,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <unistd.h>
+// Doesn't work on windows.
+// #include <unistd.h>
 #include <assert.h>
 #include <math.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
 

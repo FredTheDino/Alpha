@@ -288,17 +288,36 @@ Texture new_texture(
 		bool use_mipmaps = false) {
 
 	String file_path = find_texture_file(path);
+	int width, height, num_channels = 0;
+
+#ifdef LINUX
 	FILE* file = fopen(file_path.c_str(), "r");
 	assert(file);
 	
-	int width, height, num_channels;
 	unsigned char* data = stbi_load_from_file(file, &width, &height, &num_channels, 4);
-	
-	// Done with the file.
+
 	fclose(file);
+#elif WINDOWS
+	unsigned char* data = stbi_load(file_path.c_str(), &width, &height, &num_channels, 4);
+#endif
+
+	if ((width == 0 && height == 0) || data == nullptr) {
+		printf("Failed to load image. '%s'\n", file_path.c_str());
+		Texture t;
+		t.texture_id = -1;
+		return t;
+	}
 
 	GLuint id;
 	glGenTextures(1, &id);
+
+	printf("Texture id: %d\n", id);
+	printf("data is: %p\n", data);
+	printf("W: %d, H: %d\n", width, height);
+
+	for (int i = 0; i < 20; i++) {
+		printf("%c,", data[i]);
+	}
 
 	glBindTexture(GL_TEXTURE_2D, id);
 
@@ -346,7 +365,7 @@ bool update_texture(Texture& t, String path) {
 	int width, height, num_channels;
 	unsigned char* data = stbi_load_from_file(file, &width, &height, &num_channels, 4);
 
-	if (width == 0 && height == 0) {
+	if ((width == 0 && height == 0) || data == nullptr) {
 		return false;
 	}
 	

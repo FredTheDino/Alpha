@@ -31,19 +31,27 @@ void register_asset(HotLoader& loader, HotLoadableAsset asset) {
 	loader.assets.push_back(asset);
 }
 
+#ifdef WINDOWS
+#define TIME st_mtime
+#elif LINUX
+#define TIME st_ctime
+#else
+#error "Unsupported OS"
+#endif
+
 void update_loader(HotLoader& loader) {
 	struct stat attrib;
 	for (auto& asset : loader.assets) {
 		//HotLoadableAsset& asset = loader.assets[i];
 		auto success = stat(asset.path.c_str(), &attrib);
-		if (asset.last_edit_time == attrib.st_ctime) continue;
+		if (asset.last_edit_time == attrib.TIME) continue;
 		if (asset.timer != loader.delay) {
 			asset.timer++;
 			continue;
 		}
 		
 		// Reset the timer.
-		asset.last_edit_time = attrib.st_ctime;
+		asset.last_edit_time = attrib.TIME;
 		asset.timer = 0;
 
 		// Reload the actual assets.
@@ -103,7 +111,7 @@ void register_hotloadable_asset(HotLoader& loader, Shader* _asset, String path, 
 	asset.asset = (void*) _asset;
 	asset.path = path;
 	asset.type  = ASSET_TYPES::SHADER;
-	asset.last_edit_time = attrib.st_ctime;
+	asset.last_edit_time = attrib.TIME;
 
 	*_asset = new_shader(path, name);
 
@@ -130,7 +138,7 @@ void register_hotloadable_asset(HotLoader& loader,
 	asset.asset = (void*) _asset;
 	asset.path = file_path;
 	asset.type  = ASSET_TYPES::IMAGE;
-	asset.last_edit_time = attrib.st_ctime;
+	asset.last_edit_time = attrib.TIME;
 
 	*_asset = new_texture(path, linear_filtering, sprites_x, sprites_y, use_mipmaps);
 
@@ -151,7 +159,7 @@ void register_hotloadable_asset(HotLoader& loader, InputMap* map, String path) {
 	asset.asset = (void*) map;
 	asset.path = path;
 	asset.type  = ASSET_TYPES::INPUT_MAP;
-	asset.last_edit_time = attrib.st_ctime;
+	asset.last_edit_time = attrib.TIME;
 
 	parse_input_file(*map, path);
 
@@ -172,10 +180,11 @@ void register_hotloadable_asset(HotLoader& loader, Sound* s, String path) {
 	asset.asset = (void*) s;
 	asset.path = path;
 	asset.type  = ASSET_TYPES::AUDIO;
-	asset.last_edit_time = attrib.st_ctime;
+	asset.last_edit_time = attrib.TIME;
 
 	*s = new_sound(path);
 
 	register_asset(loader, asset);
 }
 
+#undef TIME

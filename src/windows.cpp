@@ -9,7 +9,68 @@
 // (Yes you do...)
 //
 
-#include <unistd.h>
+#include "win_unistd.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+ssize_t getdelim(char** lineptr, size_t *n, int delim, FILE* stream) {
+    char *bufptr = NULL;
+    char *p = bufptr;
+    size_t size;
+    int c;
+
+    if (lineptr == NULL) {
+        return -1;
+    }
+    if (stream == NULL) {
+        return -1;
+    }
+    if (n == NULL) {
+        return -1;
+    }
+
+    bufptr = *lineptr;
+    size = *n;
+
+    c = fgetc(stream);
+    if (c == EOF) {
+        return -1;
+    }
+
+    if (bufptr == NULL) {
+        bufptr = (char*) malloc(128);
+        if (bufptr == NULL) {
+            return -1;
+        }
+        size = 128;
+    }
+    p = bufptr;
+    while(c != EOF) {
+        if ((p - bufptr) > (size - 1)) {
+            size = size + 128;
+            bufptr = (char*) realloc(bufptr, size);
+            if (bufptr == NULL) {
+                return -1;
+            }
+        }
+        *p++ = c;
+        if (c == delim) {
+            break;
+        }
+        c = fgetc(stream);
+    }
+
+    *p++ = '\0';
+    *lineptr = bufptr;
+    *n = size;
+
+    return p - bufptr - 1;
+}
+
+inline ssize_t getline(char** lineptr, size_t *n, FILE* stream) {
+	return getdelim(lineptr, n, '\n', stream);
+}
+
 #include "main.cpp"
 
 int main(int c, char* v[]) {
@@ -23,7 +84,7 @@ CONTROLLER_TYPE get_controller_type_from_name(String name) {
 		return CONTROLLER_TYPE::DS3;
 	}
 	
-	if (name == "Sony Computer Entertainment Wireless Controller") {
+	if (name == "Wireless Controller") {
 		printf("DS4\n");
 		return CONTROLLER_TYPE::DS4;
 	}
