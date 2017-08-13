@@ -120,6 +120,7 @@ struct InputState {
 };
 
 struct InputMap {
+	bool using_keyboard = true;
 	Controller controllers[GLFW_JOYSTICK_LAST];
 	Array<InputAction> actions;
 	HashMap<String, InputState> inputs;
@@ -192,6 +193,8 @@ void poll_controller_data(InputMap& map) {
 }
 	
 void update_input(InputMap& map = input_map) {
+	bool used_keyboard = false;
+	bool used_controller = false;
 	poll_controller_data(map);
 	for (auto& it : map.inputs) {
 		auto& state = it.second;
@@ -209,12 +212,14 @@ void update_input(InputMap& map = input_map) {
 		if (action.is_keyboard) {
 			int key_state = glfwGetKey(_g.window, action.input);
 			if (key_state == GLFW_PRESS) {
+				used_keyboard = true;
 				map.inputs[action.input_name].value = 1.0f;
 			}
 		} else {
 			float value = map.controllers[0][action.input];
 			float& curr_value = map.inputs[action.input_name].value;
 			if (value > curr_value) {
+				used_controller = true;
 				curr_value = value;
 			}
 		}
@@ -231,6 +236,12 @@ void update_input(InputMap& map = input_map) {
 				state.state = INPUT_STATE::PRESSED;
 			}
 		}
+	}
+
+	if (used_keyboard) {
+		map.using_keyboard = true;
+	} else if (used_controller) {
+		map.using_keyboard = false;
 	}
 }
 

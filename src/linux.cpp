@@ -117,7 +117,7 @@ void handle_ds4  (int id, Controller& c) {
 	c.right_down  = right_y > 0 ?  right_y : 0;
 
 	c.l2 = NORMALIZE(axies[3]);
-	c.l3 = NORMALIZE(axies[4]);
+	c.r2 = NORMALIZE(axies[4]);
 
 	float dpad_x = axies[6];
 	float dpad_y = axies[7];

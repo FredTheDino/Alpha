@@ -79,9 +79,9 @@ int main(int c, char* v[]) {
 }
 
 CONTROLLER_TYPE get_controller_type_from_name(String name) {
-	if (name == "Sony PLAYSTATION(R)3 Controller") {
-		printf("DS3.\n");
-		return CONTROLLER_TYPE::DS3;
+	if (name == "Xbox 360 Controller") {
+		printf("XBOX.\n");
+		return CONTROLLER_TYPE::XBOX;
 	}
 	
 	if (name == "Wireless Controller") {
@@ -159,6 +159,11 @@ void handle_ds4  (int id, Controller& c) {
 	c.l3 = buttons[10];
 	c.r3 = buttons[11];
 
+	c.dpad_up    = buttons[14];
+	c.dpad_right = buttons[15];
+	c.dpad_down  = buttons[16];
+	c.dpad_left  = buttons[13];
+
 	const float* axies = glfwGetJoystickAxes(id, &count);
 
 	float left_x = axies[0];
@@ -178,34 +183,57 @@ void handle_ds4  (int id, Controller& c) {
 	c.right_down  = right_y > 0 ?  right_y : 0;
 
 	c.l2 = NORMALIZE(axies[3]);
-	c.l3 = NORMALIZE(axies[4]);
-
-	float dpad_x = axies[6];
-	float dpad_y = axies[7];
-	c.dpad_left  = right_x < 0 ? -right_x : 0;
-	c.dpad_right = right_x > 0 ?  right_x : 0;
-
-	c.dpad_up    = right_y < 0 ? -right_y : 0;
-	c.dpad_down  = right_y > 0 ?  right_y : 0;
-
-	/*
-	printf("buttons\n");
-	for (int i = 0; i < count; i++) {
-		printf("%d:%d\n", i, buttons[i]);
-	}
-
-
-	printf("axis\n");
-	for (int i = 0; i < count; i++) {
-		printf("%d:%f\n", i, axies[i]);
-	}
-	*/
-
+	c.r2 = NORMALIZE(axies[4]);
 }
 
 void handle_xbox (int id, Controller& c) {
+	int count;
+	const unsigned char* buttons = glfwGetJoystickButtons(id, &count);
+
+	c.cross    = buttons[0];
+	c.circle   = buttons[1];
+	c.square   = buttons[2];
+	c.triangle = buttons[3];
+
+	c.l1 = buttons[4];
+	c.r1 = buttons[5];
+
+	c.select = buttons[8];
+	c.start  = buttons[9];
+
+	c.l3 = buttons[8];
+	c.r3 = buttons[9];
+
+	c.dpad_up    = buttons[10];
+	c.dpad_right = buttons[11];
+	c.dpad_down  = buttons[12];
+	c.dpad_left  = buttons[13];
+
+	const float* axies = glfwGetJoystickAxes(id, &count);
+
+	// Y is inverted since this is a copy from the 
+	// DS4 code, where the Y axies are flipped.
+	float left_x = axies[0];
+	float left_y = -axies[1];
+	c.left_left  = left_x < 0 ? -left_x : 0;
+	c.left_right = left_x > 0 ?  left_x : 0;
+
+	c.left_up    = left_y < 0 ? -left_y : 0;
+	c.left_down  = left_y > 0 ?  left_y : 0;
+
+	float right_x = axies[2];
+	float right_y = -axies[3];
+	c.right_left  = right_x < 0 ? -right_x : 0;
+	c.right_right = right_x > 0 ?  right_x : 0;
+
+	c.right_up    = right_y < 0 ? -right_y : 0;
+	c.right_down  = right_y > 0 ?  right_y : 0;
+
+	c.l2 = NORMALIZE(axies[4]);
+	c.r2 = NORMALIZE(axies[5]);
 
 }
+
 void handle_xbone(int id, Controller& c) {
 
 }
