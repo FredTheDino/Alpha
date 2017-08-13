@@ -149,7 +149,7 @@ void update_audio() {
 		if (!s.second.is_persistent && is_stopped(s.first)) {
 			// It's unused.
 			s.second.used = false;
-			alSourcei(s.first, AL_BUFFER, NULL);
+			alSourcei(s.first, AL_BUFFER, (ALint) NULL);
 			free_sources.push(s.first);
 		} else {
 			set_sound_info(s.second);

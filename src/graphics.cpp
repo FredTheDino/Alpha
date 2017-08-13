@@ -311,14 +311,6 @@ Texture new_texture(
 	GLuint id;
 	glGenTextures(1, &id);
 
-	printf("Texture id: %d\n", id);
-	printf("data is: %p\n", data);
-	printf("W: %d, H: %d\n", width, height);
-
-	for (int i = 0; i < 20; i++) {
-		printf("%c,", data[i]);
-	}
-
 	glBindTexture(GL_TEXTURE_2D, id);
 
 	GLenum filter = linear_filtering ? GL_LINEAR : GL_NEAREST;
