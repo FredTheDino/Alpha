@@ -208,6 +208,7 @@ void update_input(InputMap& map = input_map) {
 		map.using_keyboard = false;
 	}
 }
+
 int string_to_glfw_key(String& key) {
 	for (auto & c: key) c = toupper(c);
 
@@ -366,5 +367,9 @@ bool parse_input_file(InputMap& map, String path) {
 
 	fclose(file);
 	return true;
+}
+
+inline Vec2 mouse_to_rhc (InputMap& map) {
+	return Vec2(map.mouse_pos.x / global.window_width, map.mouse_pos.y / global.window_height);
 }
 

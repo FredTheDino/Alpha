@@ -120,6 +120,7 @@ struct InputMap {
 	Controller controllers[GLFW_JOYSTICK_LAST];
 	Array<InputAction> actions;
 	HashMap<String, InputState> inputs;
+	Vec2 mouse_pos;
 } input_map;
 
 // Forward declaration so this can be implemented on the platform layer.

@@ -3,6 +3,12 @@ exit K escape
 
 left  K a
 right K d
+up    K w
+down  K s
+
+turn  K x
+zoom_in K e
+zoom_out K q
 
 sound K h
 sound J CROSS

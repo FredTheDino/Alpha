@@ -59,9 +59,7 @@ void window_close_callback(GLFWwindow* window) {
 }
 
 void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
-	global.window_width = new_width;
-	global.window_height = new_height;
-	global.window_aspect_ratio = (float) new_width / new_height;
+	set_window_info(new_width, new_height);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 	glViewport(0, 0, new_width, new_height);
@@ -101,8 +99,10 @@ void game_main() {
 		assert(0);
 	}
 
+	// Set the resolution.
+	set_window_info(800, 600);
+
 	global.window = glfwCreateWindow(global.window_width, global.window_height, global.window_title, NULL, NULL);
-	global.window_aspect_ratio = global.window_width / global.window_height;
 
 	glfwSetWindowCloseCallback(global.window, window_close_callback);
 	glfwSetWindowSizeCallback(global.window, window_resize_callback);
@@ -196,6 +196,28 @@ void game_main() {
 
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		use_shader(color_shader);
+
+		GLint aspect   = glGetUniformLocation(color_shader.program, "aspect");
+		GLint cam_pos  = glGetUniformLocation(color_shader.program, "cam_pos");
+		GLint cam_rot  = glGetUniformLocation(color_shader.program, "cam_rot");
+		GLint cam_zoom = glGetUniformLocation(color_shader.program, "cam_zoom");
+		
+		main_camera.position.x += delta * value("right");
+		main_camera.position.x -= delta * value("left");
+		main_camera.position.y += delta * value("up");
+		main_camera.position.y -= delta * value("down");
+
+		main_camera.rotation += delta * value("turn");
+
+		main_camera.zoom /= 1 + delta * value("zoom_in");
+		main_camera.zoom *= 1 + delta * value("zoom_out");
+
+		glUniform1f(aspect, global.window_aspect_ratio);
+		glUniform1f(cam_rot, main_camera.rotation);
+		glUniform2f(cam_pos, main_camera.position.x, main_camera.position.y);
+		glUniform1f(cam_zoom, main_camera.zoom);
+		
+
 		bind_texture(mario, 0);
 		GLint sprite = glGetUniformLocation(color_shader.program, "sprite");
 		glUniform1i(sprite, 0);
@@ -216,14 +238,7 @@ void game_main() {
 		draw_mesh(quad_mesh);
 
 
-		static float x2 = 0;
-		if (is_down("left")) {
-			x2 -= delta * value("left");
-		}
-		if (is_down("right")) {
-			x2 += delta * value("right");
-		}
-		glUniform1f(x_loc, x2);
+		glUniform1f(x_loc, 0);
 		glUniform1f(y_loc, 0.2);
 		glUniform1f(color_scale_loc, 1.0f);
 

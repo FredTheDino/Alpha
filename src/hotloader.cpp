@@ -91,20 +91,11 @@ void update_loader(HotLoader& loader) {
 }
 
 void register_hotloadable_asset(HotLoader& loader, Shader* _asset, String path, String name) {
-	struct stat attrib;
-	// not sure about the return code...
-	auto error = stat(path.c_str(), &attrib);
-	if (error) {
-		printf("[Hotloader.cpp] Failed to add shader asset '%s'!\n", path.c_str());
-		return;
-	}
-
 	HotLoadableAsset asset;
 
 	asset.asset = (void*) _asset;
 	asset.path = path;
 	asset.type  = ASSET_TYPES::SHADER;
-	asset.type  = ASSET_TYPES::INPUT_MAP;
 	asset.last_edit_time = get_edit_time(path.c_str());
 
 	*_asset = new_shader(path, name);
@@ -118,7 +109,6 @@ void register_hotloadable_asset(HotLoader& loader,
 		bool linear_filtering = true, 
 		int sprites_x = 0, int sprites_y = 0, 
 		bool use_mipmaps = false) {
-
 	String file_path = find_texture_file(path);
 
 	HotLoadableAsset asset;
