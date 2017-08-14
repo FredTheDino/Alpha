@@ -6,7 +6,9 @@ right K d
 
 sound K h
 sound J CROSS
+sound J SQUARE
+sound J SELECT
 
 some_other J LEFT_UP
 left  J LEFT_LEFT
-right J LEFT_RIGHT
+left  J RIGHT_LEFT

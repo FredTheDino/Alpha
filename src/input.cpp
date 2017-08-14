@@ -3,247 +3,7 @@
 // It is responsible for reading the input keymap which the hotloader
 // reloads when it is updated.
 //
-
-#define Q(x) #x
-#define QUOTE(x) Q(x)
-#define TO_KEY_ENUM(N) if (key == Q(N)) return GLFW_KEY_## N ;
-#define TO_JOY_ENUM(N) if (key == Q(N)) return N;
-
-const float DEADZONE = 0.1f;
-
-enum INPUT_STATE {
-	UP = 0,
-	DOWN = 1,
-	RELEASED = 2,
-	PRESSED = 3,
-};
-
-struct InputAction {
-	String input_name;
-	bool is_keyboard = true;
-	int input = 0;
-	//int modifyers = 0; // Used for keyboards for Alt, Ctrl, Shift etc...
-	INPUT_STATE state = INPUT_STATE::UP;
-	float value = 0.0f;
-};
-
-enum CONTROLLER_TYPE {
-	NONE,
-	UNKNOWN,
-	DS3,
-	DS4,
-	XBOX,
-	XBONE,
-};
-
-enum CONTROLLER_BUTTONS {
-	LEFT_UP,
-	LEFT_DOWN,
-	LEFT_LEFT,
-	LEFT_RIGHT,
-
-	RIGHT_UP,
-	RIGHT_DOWN,
-	RIGHT_LEFT,
-	RIGHT_RIGHT,
-
-	L2,
-	R2,
-
-	DPAD_UP,
-	DPAD_DOWN,
-	DPAD_RIGHT,
-	DPAD_LEFT,
-
-	SELECT,
-	START,
-	HOME,
-
-	CROSS,
-	SQUARE,
-	CIRCLE,
-	TRIANGLE,
-
-	L1,
-	R1,
-
-	L3,
-	R3,
-};
-
-struct Controller {
-	CONTROLLER_TYPE type = CONTROLLER_TYPE::NONE;
-
-	struct {
-		float left_up    = 0;
-		float left_down  = 0;
-		float left_left  = 0;
-		float left_right = 0;
-
-		float right_up    = 0;
-		float right_down  = 0;
-		float right_left  = 0;
-		float right_right = 0;
-
-		float l2 = 0;
-		float r2 = 0;
-
-		float dpad_up    = 0;
-		float dpad_down  = 0;
-		float dpad_right = 0;
-		float dpad_left  = 0;
-
-		float select = 0;
-		float start  = 0;
-		float home   = 0;
-
-		float cross    = 0;
-		float square   = 0;
-		float circle   = 0;
-		float triangle = 0;
-
-		float l1 = 0;
-		float r1 = 0;
-
-		float l3 = 0;
-		float r3 = 0;
-	};
-
-	float operator[] (size_t i) {
-		return ((float*)(void*)this)[i+1];
-	}
-};
-
-struct InputState {
-	float value = 0.0f;
-	INPUT_STATE state = INPUT_STATE::UP;
-};
-
-struct InputMap {
-	bool using_keyboard = true;
-	Controller controllers[GLFW_JOYSTICK_LAST];
-	Array<InputAction> actions;
-	HashMap<String, InputState> inputs;
-} input_map;
-
-void clean_input(InputMap& map) {
-	map.actions.clear();
-	map.inputs.clear();
-}
-
-/*
-void controller_connect_callback(int joy, int event) {
-	printf("Triggered!\n");
-	if (event == GLFW_CONNECTED) {
-		printf("Connected a controller '%s' (%d)\n", glfwGetJoystickName(joy), joy);
-	} else if (event == GLFW_DISCONNECTED) {
-		printf("Disconnected a controller '%s' (%d)\n", glfwGetJoystickName(joy), joy);
-	}
-}
-*/
-
-CONTROLLER_TYPE get_controller_type_from_name(String name);
-void handle_ds3  (int id, Controller& c);
-void handle_ds4  (int id, Controller& c);
-void handle_xbox (int id, Controller& c);
-void handle_xbone(int id, Controller& c);
-
-void poll_controller_data(InputMap& map) {
-	// if (map.controllers.size() == 0) return;
-	for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
-		CONTROLLER_TYPE& type = map.controllers[i].type;
-		int present = glfwJoystickPresent(i);
-		if (!present) {
-			if (type != CONTROLLER_TYPE::NONE) {
-				// Disconnect
-				type = CONTROLLER_TYPE::NONE;
-				printf("Controller %d disconnected.\n", i);
-			}
-			continue;
-		}
-
-		if (present && type == CONTROLLER_TYPE::NONE) {
-			// Connect
-			printf("Connected controller %d as a ", i);
-			String name = glfwGetJoystickName(i);
-			type = get_controller_type_from_name(name);
-		}
-
-		Controller& c = map.controllers[i];
-		switch (type) {
-			case CONTROLLER_TYPE::DS3:
-				handle_ds3(i, c);
-				break;
-			case CONTROLLER_TYPE::DS4:
-				handle_ds4(i, c);
-				break;
-			case CONTROLLER_TYPE::XBOX:
-				handle_xbox(i, c);
-				break;
-			case CONTROLLER_TYPE::XBONE:
-				handle_xbone(i, c);
-				break;
-			case CONTROLLER_TYPE::UNKNOWN:
-				break;
-			case CONTROLLER_TYPE::NONE:
-			default:
-				printf("Unhandled controller type: %d\n", type);
-		}
-	}
-}
-	
-void update_input(InputMap& map = input_map) {
-	bool used_keyboard = false;
-	bool used_controller = false;
-	poll_controller_data(map);
-	for (auto& it : map.inputs) {
-		auto& state = it.second;
-		// Reset the value each frame.
-		state.value = 0.0f;
-
-		if (state.state == INPUT_STATE::RELEASED) {
-			state.state = INPUT_STATE::UP;
-		} else if (state.state == INPUT_STATE::PRESSED) {
-			state.state = INPUT_STATE::DOWN;
-		}
-	}
-
-	for (const auto& action : map.actions) {
-		if (action.is_keyboard) {
-			int key_state = glfwGetKey(_g.window, action.input);
-			if (key_state == GLFW_PRESS) {
-				used_keyboard = true;
-				map.inputs[action.input_name].value = 1.0f;
-			}
-		} else {
-			float value = map.controllers[0][action.input];
-			float& curr_value = map.inputs[action.input_name].value;
-			if (value > curr_value) {
-				used_controller = true;
-				curr_value = value;
-			}
-		}
-	}
-
-	for (auto& it : map.inputs) {
-		auto& state = it.second;
-		if (state.value <= DEADZONE) {
-			if (state.state == INPUT_STATE::DOWN) {
-				state.state = INPUT_STATE::RELEASED;
-			} 
-		} else {
-			if (state.state == INPUT_STATE::UP) {
-				state.state = INPUT_STATE::PRESSED;
-			}
-		}
-	}
-
-	if (used_keyboard) {
-		map.using_keyboard = true;
-	} else if (used_controller) {
-		map.using_keyboard = false;
-	}
-}
+#include "input.h"
 
 inline bool exists(InputMap& map, const String& name) {
 	auto it = map.inputs.find(name);
@@ -339,12 +99,115 @@ inline float value(const String& name) {
 	return value(input_map, name);
 }
 
-void dump_input_to_file(InputMap& map, String path) {
+// 
+// Input maps have the following format:
+// # This is a comment.
+//
+// Keyboard 
+// name_of_action K a
+// name^      type^ ^Key/Key identifier.
+// 
+// Controller
+// name_of_action J BUTTON_IDENTIFIER
+// name^      type^ ^Key
 
+void poll_controller_data(InputMap& map) {
+	// if (map.controllers.size() == 0) return;
+	for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
+		CONTROLLER_TYPE& type = map.controllers[i].type;
+		int present = glfwJoystickPresent(i);
+		if (!present) {
+			if (type != CONTROLLER_TYPE::NONE) {
+				// Disconnect
+				type = CONTROLLER_TYPE::NONE;
+				printf("Controller %d disconnected.\n", i);
+			}
+			continue;
+		}
+
+		if (present && type == CONTROLLER_TYPE::NONE) {
+			// Connect
+			printf("Connected controller %d as a ", i);
+			String name = glfwGetJoystickName(i);
+			type = get_controller_type_from_name(name);
+		}
+
+		Controller& c = map.controllers[i];
+		switch (type) {
+			case CONTROLLER_TYPE::DS3:
+				handle_ds3(i, c);
+				break;
+			case CONTROLLER_TYPE::DS4:
+				handle_ds4(i, c);
+				break;
+			case CONTROLLER_TYPE::XBOX:
+				handle_xbox(i, c);
+				break;
+			case CONTROLLER_TYPE::XBONE:
+				handle_xbone(i, c);
+				break;
+			case CONTROLLER_TYPE::UNKNOWN:
+				break;
+			case CONTROLLER_TYPE::NONE:
+			default:
+				printf("Unhandled controller type: %d\n", type);
+		}
+	}
 }
 
-#define TO_GLFW_KEY(N) ( if (key == N ) return GLFW_KEY_## N ; )
+void update_input(InputMap& map = input_map) {
+	bool used_keyboard = false;
+	bool used_controller = false;
 
+	poll_controller_data(map);
+	for (auto& it : map.inputs) {
+		auto& state = it.second;
+		// Reset the value each frame.
+		state.value = 0.0f;
+
+		if (state.state == INPUT_STATE::RELEASED) {
+			state.state = INPUT_STATE::UP;
+		} else if (state.state == INPUT_STATE::PRESSED) {
+			state.state = INPUT_STATE::DOWN;
+		}
+	}
+
+	for (const auto& action : map.actions) {
+		if (action.is_keyboard) {
+			int key_state = glfwGetKey(global.window, action.input);
+			if (key_state == GLFW_PRESS) {
+				used_keyboard = true;
+				map.inputs[action.input_name].value = 1.0f;
+			}
+		} else {
+			float value = map.controllers[0][action.input];
+			float& curr_value = map.inputs[action.input_name].value;
+			if (value > curr_value) {
+				used_controller = true;
+				curr_value = value;
+			}
+		}
+	}
+
+	for (auto& it : map.inputs) {
+		auto& state = it.second;
+		if (state.value <= DEADZONE) {
+			if (state.state == INPUT_STATE::DOWN) {
+				state.state = INPUT_STATE::RELEASED;
+			} 
+		} else {
+			if (state.state == INPUT_STATE::UP) {
+				state.state = INPUT_STATE::PRESSED;
+			}
+		}
+	}
+
+	if (used_keyboard) {
+		map.using_keyboard = true;
+	} else if (used_controller) {
+		map.using_keyboard = false;
+	}
+}
 int string_to_glfw_key(String& key) {
 	for (auto & c: key) c = toupper(c);
 
@@ -355,17 +218,17 @@ int string_to_glfw_key(String& key) {
 			return c - '0' + 48;
 		}
 		if (('A' <= c && c <= 'Z') || 
-			c == '[' || c == ']' || c == ',' || 
-			c == '.' || c == '-' ||
-			c == '=' || c == ';') {
+				c == '[' || c == ']' || c == ',' || 
+				c == '.' || c == '-' ||
+				c == '=' || c == ';') {
 			return c;
 		}
 	}
-	
+
 	TO_KEY_ENUM(ESCAPE);
 	TO_KEY_ENUM(ENTER);
 	TO_KEY_ENUM(SPACE);
-	
+
 	printf("Unknown key: %s\n", key.c_str());
 	return -1;
 }
@@ -406,21 +269,7 @@ int string_to_joy(String& key) {
 	return -1;
 }
 
-
-// 
-// Input maps have the following format:
-// # This is a comment.
-//
-// Keyboard 
-// name_of_action K a
-// name^      type^ ^Key  ^Modifyers
-// 
-// name_of_action J BUTTON_IDENTIFIER
-// name^      type^ ^Key
-// 
-// .map
-
-inline bool check_if_valid(const char c) {
+inline bool is_end_of_string(const char c) {
 	return !(c == '\n' || c == '\0');
 }
 
@@ -430,7 +279,7 @@ int find_next_nonspace(const char* p) {
 	do {
 		i++;
 		c = p[i];
-	} while (c == ' ' && check_if_valid(c));
+	} while (c == ' ' && is_end_of_string(c));
 	return i;
 }
 
@@ -440,7 +289,7 @@ int find_next_space(const char* p) {
 	do {
 		i++;
 		c = p[i];
-	} while (c != ' ' && check_if_valid(c));
+	} while (c != ' ' && is_end_of_string(c));
 	return i;
 }
 
@@ -466,52 +315,38 @@ bool parse_input_file(InputMap& map, String path) {
 		if (line[0] == '#') continue;
 
 		// Find the first space.
-		size_t i = find_next_nonspace(line);
-		char c = line[0];
-		if (!check_if_valid(c)) {
-			continue;
-		}
-
-		i = find_next_space(line);
-		c = line[i];
-		if (!check_if_valid(c)) {
-			continue;
-		}
+		find_next_nonspace(line);
+		size_t i = find_next_space(line);
+		char c = line[i];
 
 		// Copy over the string.
+		InputAction action;
 		line[i] = '\0';
-		String name = line;
+		action.input_name = line;
 
-		// Cut of the first part of the line.
-		char* key_p = line + i + 1;
+		if (action.input_name == "") {
+			continue;
+		}
 
-		// Find the type of input.
+		char* key_p;
+		key_p = line + i + 1;
 		key_p += find_next_nonspace(key_p);
 		char type = toupper(key_p[0]);
-
+		
 		// Find the next "word"
 		key_p += find_next_space(key_p);
 		key_p += find_next_nonspace(key_p);
 		c = key_p[0];
-		if (!check_if_valid(c)) {
-			continue;
-		}
 
 		i = find_next_space(key_p);
 		key_p[i] = '\0';
 		String key = key_p;
-
-		InputAction action;
-		
-		// Check if we allready have an entry for it.
-		// Add if we don't.
 
 		if (type == 'K') {
 			// It's a keyboard!
 			action.is_keyboard = true;
 
 			action.input = string_to_glfw_key(key);
-			action.input_name = name;
 		} else if (type == 'J') {
 			action.is_keyboard = false;
 
@@ -520,12 +355,16 @@ bool parse_input_file(InputMap& map, String path) {
 			printf("[Input.cpp] Unrecognized input type '%c', 'J' and 'K' are the only supporded types. (%s:%d)\n", key_p[0], path.c_str(), line_number);
 			continue;
 		}
-		
-		action.input_name = name;
-		add_if_not_added(map, name);
+
+		add_if_not_added(map, action.input_name);
+
 		map.actions.push_back(action);
 	}
+
+	if (line) 
+		free(line);
 
 	fclose(file);
 	return true;
 }
+

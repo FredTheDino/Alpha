@@ -73,6 +73,17 @@ inline ssize_t getline(char** lineptr, size_t *n, FILE* stream) {
 
 #include "main.cpp"
 
+unsigned long get_edit_time(const char* path) {
+	struct stat attrib;
+	auto error = stat(path, &attrib);
+	if (error) {
+		printf("[Hotloader.cpp] Failed to open asset '%s'!\n", path);
+		return 0;
+	}
+	
+	return attrib.st_mtime;
+}
+
 int main(int c, char* v[]) {
 	game_main();
 	return 0;

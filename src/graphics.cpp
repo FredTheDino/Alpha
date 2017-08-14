@@ -121,10 +121,10 @@ void delete_mesh(Mesh m) {
 }
 
 //
-// Start of shader stuff,
+// Shaders
 //
 
-bool check_glsl_error(GLuint target, GLenum flag, const char* message, bool is_program = false) {
+bool glsl_error(GLuint target, GLenum flag, const char* message, bool is_program = false) {
 	GLint success = 1;
 	if (is_program) {
 		glGetProgramiv(target, flag, &success);
@@ -159,7 +159,7 @@ GLuint compile_shader(String const& source, GLenum shader_type) {
 	glShaderSource(shader, 1, &src, NULL);
 	glCompileShader(shader);
 
-	if (!check_glsl_error(shader, GL_COMPILE_STATUS, "Shader Compilation")) {
+	if (!glsl_error(shader, GL_COMPILE_STATUS, "Shader Compilation")) {
 		glDeleteShader(shader); // Don't leak the shader.
 		return -1;
 	}
@@ -174,7 +174,7 @@ GLuint link_program(GLuint Vertex_shader, GLuint fragment_shader) {
 
 	glLinkProgram(program);
 
-	if(!check_glsl_error(program, GL_LINK_STATUS, "Program Linking", true)) {
+	if(!glsl_error(program, GL_LINK_STATUS, "Program Linking", true)) {
 		//We don't need the program anymore.
 		glDeleteProgram(program);
 		return -1;
@@ -278,6 +278,7 @@ String find_texture_file(String path) {
 	for (int i = 0; i < array_len(supported_texture_formats); i++) {
 		printf(" %s", supported_texture_formats[i].c_str());
 	}
+	printf("\n");
 
 	return "";
 }
@@ -290,6 +291,7 @@ Texture new_texture(
 	String file_path = find_texture_file(path);
 	int width, height, num_channels = 0;
 
+	/*
 #ifdef LINUX
 	FILE* file = fopen(file_path.c_str(), "r");
 	assert(file);
@@ -298,8 +300,9 @@ Texture new_texture(
 
 	fclose(file);
 #elif WINDOWS
+*/
 	unsigned char* data = stbi_load(file_path.c_str(), &width, &height, &num_channels, 4);
-#endif
+//#endif
 
 	if ((width == 0 && height == 0) || data == nullptr) {
 		printf("Failed to load image. '%s'\n", file_path.c_str());
@@ -348,22 +351,14 @@ bool update_texture(Texture& t, String path) {
 	// Can't do this cause the hotloader wants
 	// to know exactyly which file it is, so
 	// here the path isn't checked...
-	FILE* file = fopen(path.c_str(), "r");
-	if (file == 0) {
-		// Don't sweat it if we can't find the file.
-		return false;
-	}
 
 	int width, height, num_channels;
-	unsigned char* data = stbi_load_from_file(file, &width, &height, &num_channels, 4);
+	unsigned char* data = stbi_load(path.c_str(), &width, &height, &num_channels, 4);
 
 	if ((width == 0 && height == 0) || data == nullptr) {
 		return false;
 	}
 	
-	// Done with the file.
-	fclose(file);
-
 	glBindTexture(GL_TEXTURE_2D, t.texture_id);
 
 	GLenum format = GL_RGBA;

@@ -55,20 +55,20 @@ struct PPO {
 } ppo;
 
 void window_close_callback(GLFWwindow* window) {
-	_g.should_quit = true;
+	global.should_quit = true;
 }
 
 void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
-	_g.window_width = new_width;
-	_g.window_height = new_height;
-	_g.window_aspect_ratio = (float) new_width / new_height;
+	global.window_width = new_width;
+	global.window_height = new_height;
+	global.window_aspect_ratio = (float) new_width / new_height;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 	glViewport(0, 0, new_width, new_height);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _g.window_width, _g.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, global.window_width, global.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _g.window_width, _g.window_height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, new_width, new_height);
@@ -82,13 +82,13 @@ void init_ppo() {
 
 	glGenTextures(1, &ppo.texture.texture_id);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _g.window_width, _g.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, global.window_width, global.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glGenRenderbuffers(1, &ppo.depth);
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _g.window_width, _g.window_height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ppo.texture.texture_id, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ppo.depth);
@@ -101,15 +101,15 @@ void game_main() {
 		assert(0);
 	}
 
-	_g.window = glfwCreateWindow(_g.window_width, _g.window_height, _g.window_title, NULL, NULL);
-	_g.window_aspect_ratio = _g.window_width / _g.window_height;
+	global.window = glfwCreateWindow(global.window_width, global.window_height, global.window_title, NULL, NULL);
+	global.window_aspect_ratio = global.window_width / global.window_height;
 
-	glfwSetWindowCloseCallback(_g.window, window_close_callback);
-	glfwSetWindowSizeCallback(_g.window, window_resize_callback);
+	glfwSetWindowCloseCallback(global.window, window_close_callback);
+	glfwSetWindowSizeCallback(global.window, window_resize_callback);
 	// This doesn't seem to work properly
 	//glfwSetJoystickCallback(controller_connect_callback);
 
-	glfwMakeContextCurrent(_g.window);	
+	glfwMakeContextCurrent(global.window);	
 
 	// @FIXME, we dont allow this to be set ATM, that would probably be smart.
 	glfwSwapInterval(1);
@@ -133,7 +133,7 @@ void game_main() {
 
 	init_ppo();
 
-	glClearColor(0.75, 0.3, 0.21, 1.0);
+	glClearColor(0.9, 0.8, 0.21, 1.0);
 
 	/////////////
 	// INIT AL //
@@ -170,7 +170,7 @@ void game_main() {
 	float t = 0.0f;
 	float delta = 0.0f;
 	glfwSetTime(0);
-	while (!_g.should_quit) {
+	while (!global.should_quit) {
 		float new_t = glfwGetTime();
 		delta = t - new_t;
 		t = new_t;
@@ -183,7 +183,7 @@ void game_main() {
 		update_audio();
 
 		if (is_down("exit")) {
-			_g.should_quit = true;
+			global.should_quit = true;
 		}
 
 		if (pressed("sound")) {
@@ -241,9 +241,8 @@ void game_main() {
 
 		draw_mesh(quad_mesh);
 
-		glfwSwapBuffers(_g.window);
+		glfwSwapBuffers(global.window);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-		glClearColor(0.9, 0.8, 0.21, 1.0);
 	}
 
 	delete_texture(mario);

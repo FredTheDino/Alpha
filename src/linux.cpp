@@ -17,6 +17,17 @@ int main(int c, char* v[]) {
 	return 0;
 }
 
+unsigned long get_edit_time(const char* path) {
+	struct stat attrib;
+	auto error = stat(path, &attrib);
+	if (error) {
+		printf("[Hotloader.cpp] Failed to open asset '%s'!\n", path);
+		return 0;
+	}
+	
+	return attrib.st_ctime;
+}
+
 CONTROLLER_TYPE get_controller_type_from_name(String name) {
 	if (name == "Sony PLAYSTATION(R)3 Controller") {
 		printf("DS3.\n");
@@ -37,8 +48,8 @@ CONTROLLER_TYPE get_controller_type_from_name(String name) {
 void handle_ds3  (int id, Controller& c) {
 	int count;
 	const unsigned char* buttons = glfwGetJoystickButtons(id, &count);
-	c.start  = buttons[0];
-	c.select = buttons[3];
+	c.select = buttons[0];
+	c.start  = buttons[3];
 	c.home = buttons[16];
 
 	c.l3 = buttons[1];

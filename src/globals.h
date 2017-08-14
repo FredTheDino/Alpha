@@ -7,4 +7,4 @@ struct {
 	int window_height  = 900;
 	float window_aspect_ratio = 0;
 	char window_title[13] = "Hello world!";
-} _g;
+} global;
