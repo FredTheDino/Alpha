@@ -21,7 +21,7 @@ struct HotLoadableAsset {
 
 struct HotLoader {
 	Array<HotLoadableAsset> assets;
-	short delay = 5;
+	short delay = 10;
 } hot_loader;
 
 void register_asset(HotLoader& loader, HotLoadableAsset asset) {
@@ -29,13 +29,13 @@ void register_asset(HotLoader& loader, HotLoadableAsset asset) {
 }
 
 // Dependant on the platform layer.
-unsigned long get_edit_time(const char* path);
+unsigned long get_edit_time(const char* path, bool silent=false);
 
 void update_loader(HotLoader& loader) {
 	struct stat attrib;
 	for (auto& asset : loader.assets) {
 		//HotLoadableAsset& asset = loader.assets[i];
-		unsigned long last_edit_time = get_edit_time(asset.path.c_str());
+		unsigned long last_edit_time = get_edit_time(asset.path.c_str(), true);
 		if (asset.last_edit_time == last_edit_time) continue;
 		if (asset.timer != loader.delay) {
 			asset.timer++;

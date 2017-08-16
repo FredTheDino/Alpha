@@ -17,11 +17,12 @@ int main(int c, char* v[]) {
 	return 0;
 }
 
-unsigned long get_edit_time(const char* path) {
+unsigned long get_edit_time(const char* path, bool silent) {
 	struct stat attrib;
 	auto error = stat(path, &attrib);
 	if (error) {
-		printf("[Hotloader.cpp] Failed to open asset '%s'!\n", path);
+		if (!silent)
+			printf("[Hotloader.cpp] Failed to open asset '%s'!\n", path);
 		return 0;
 	}
 	

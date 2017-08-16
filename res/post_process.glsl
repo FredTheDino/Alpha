@@ -1,4 +1,7 @@
-#version 150
+#version 300 es
+
+// This is needed for ES.
+precision highp float;
 
 uniform sampler2D screen;
 uniform float time;
@@ -8,14 +11,14 @@ uniform float time;
 //
 // Vertex Shader
 //
-in vec2 position;
-in vec2 uv;
+layout(location=0) in vec2 position;
+layout(location=1) in vec2 uv;
 
 out vec2 fragUV;
 
 void main() {
-	gl_Position = vec4(position * 2, 0, 1);
-	fragUV = vec2(uv.x, 1 - uv.y);
+	gl_Position = vec4(position.x * 2.0, position.y * 2.0, 0, 1);
+	fragUV = vec2(uv.x, 1.0 - uv.y);
 }
 
 #else
@@ -37,7 +40,10 @@ void main() {
 	texel = texture(screen, uv);
 
 	float gamma = 1.1;
-	color = vec4((texel.r - 0.5) * gamma + 0.5, (texel.g - 0.5) * gamma + 0.5, (texel.b - 0.5) * gamma + 0.5, 1.0);
+	color = vec4(
+	(texel.r - 0.5) * gamma + 0.5, 
+	(texel.g - 0.5) * gamma + 0.5, 
+	(texel.b - 0.5) * gamma + 0.5, 1.0);
 	color.w = 1.0;
 }
 

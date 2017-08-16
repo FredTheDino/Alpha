@@ -135,6 +135,9 @@ void poll_controller_data(InputMap& map) {
 			case CONTROLLER_TYPE::XBONE:
 				handle_xbone(i, c);
 				break;
+			case CONTROLLER_TYPE::NONE:
+			case CONTROLLER_TYPE::UNKNOWN:
+				break;
 			default:
 				printf("Unhandled controller type: %d\n", type);
 		}

@@ -1,18 +1,18 @@
 #version 300 es
 
-precision highp vec2;
+// This is needed for ES.
 precision highp float;
 
 uniform float aspect;
-uniform vec2 cam_pos;
+uniform vec2  cam_pos;
 uniform float cam_rot;
 uniform float cam_zoom;
 
 uniform sampler2D sprite;
 uniform float layer;
 
-uniform vec2 position;
-uniform vec2 scale;
+uniform vec2  position;
+uniform vec2  scale;
 uniform float rotation;
 
 uniform vec3 color_hint;
@@ -58,14 +58,13 @@ in vec2 fragUV;
 out vec4 color;
 
 void main() {
-	vec4 texel = texture(sprite, fragUV);
+	vec4 texel = texture2D(sprite, fragUV);
 
 	if (texel.w < 0.1) {
 		discard;
 	}
 
 	color = texel * vec4(color_hint, 1);
-
 	color.w = texel.w;
 }
 

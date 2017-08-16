@@ -49,6 +49,7 @@ Mesh quad_mesh;
 // Stuff with dependencies.
 #include "hotloader.cpp"
 
+#define POST_PROCESSING 0
 
 struct PPO {
 	GLuint buffer;
@@ -66,12 +67,14 @@ void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 	glViewport(0, 0, new_width, new_height);
 
+#if POST_PROCESSING
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, global.window_width, global.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, new_width, new_height);
+#endif
 }
 
 // Setup the offscreen frame buffer.
@@ -82,7 +85,7 @@ void init_ppo() {
 
 	glGenTextures(1, &ppo.texture.texture_id);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, global.window_width, global.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, global.window_width, global.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -133,7 +136,9 @@ void game_main() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#if POST_PROCESSING
 	init_ppo();
+#endif
 
 	glClearColor(0.9, 0.8, 0.21, 1.0);
 
@@ -168,7 +173,6 @@ void game_main() {
 	Texture mario;
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 
-
 	float t = 0.0f;
 	float delta = 0.0f;
 	glfwSetTime(0);
@@ -192,11 +196,13 @@ void game_main() {
 			play_sound(ha, SFX);
 		}
 
+#if POST_PROCESSING
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGB, ppo.texture.texture_id, 0);
+#endif
 		
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		use_shader(color_shader);
 		
 		main_camera.position.x += delta * value("right");
@@ -219,16 +225,20 @@ void game_main() {
 
 		draw_sprite(color_shader, mario, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
 
+		
+		// Post processing.
+#if POST_PROCESSING
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		GLuint screen_location = glGetUniformLocation(post_process_shader.program, "screen");
 		use_shader(post_process_shader);
-		glUniform1i(screen_location, 0);
+		GLuint screen_location = glGetUniformLocation(post_process_shader.program, "screen");
 		bind_texture(ppo.texture, 0);
+		glUniform1i(screen_location, 0);
 
 		glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), t);
 
 		draw_mesh(quad_mesh);
+#endif
 
 		glfwSwapBuffers(global.window);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
