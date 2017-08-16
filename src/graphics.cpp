@@ -1,85 +1,4 @@
 
-// Maybe in math?
-struct Vec2;
-/*
-struct Vec3;
-struct Vec4;
-struct Mat4;
-*/
-
-struct Vec2 {
-	union {
-		struct {
-			float x;
-			float y;
-
-		};
-		float _[2];
-	};
-
-	Vec2(float _x = 0, float _y = 0) {
-		x = _x;
-		y = _y;
-	}
-
-	Vec2 operator+ (const Vec2& other) {
-		return Vec2(x + other.x, y + other.y);
-	}
-
-	Vec2 operator- (const Vec2& other) {
-		return Vec2(x - other.x, y - other.y);
-	}
-
-	Vec2 operator* (const float scale) {
-		return Vec2(x * scale, y * scale);
-	}
-
-	Vec2 operator/ (const float scale) {
-		return Vec2(x / scale, y / scale);
-	}
-
-};
-
-float dot (const Vec2& a, const Vec2& b) {
-	return a.x * b.y + b.x * a.y;
-}
-
-struct Vertex {
-	Vec2 position;
-	Vec2 uv;
-
-	Vertex(float x, float y, float u, float v) {
-		position.x = x;
-		position.y = y;
-		uv.x = u;
-		uv.y = v;
-	}
-};
-
-struct Mesh {
-	unsigned vbo;
-	unsigned vao;
-	unsigned draw_count;
-};
-
-struct Texture {
-	int w, h;
-	unsigned texture_id;
-	unsigned sprites_x = 1;
-	unsigned sprites_y = 1;
-};
-
-struct Shader {
-	GLuint program = -1; 
-	String name;
-};  
-
-struct Camera {
-	Vec2 position = {0, 0};
-	float rotation = 0;
-	float zoom = 1;
-} main_camera;
-
 // 
 // Start of mesh stuff.
 //
@@ -392,3 +311,48 @@ void bind_texture(Texture& t, int texture_slot) {
 	glActiveTexture(GL_TEXTURE0 + texture_slot);
 	glBindTexture(GL_TEXTURE_2D, t.texture_id);
 }
+
+//
+// @Robustness: Maybe we shouldn't send this in via uniforms,
+// maybe we should send it in once per frame to a UBO, just
+// to make sure we don't send more then we need.
+//
+// This is only if we need it, and it becomes a hazzle to manage
+// multiple shaders.
+//
+
+void send_camera_to_shader(Shader s, Camera c = main_camera) {
+	GLint aspect   = glGetUniformLocation(s.program, "aspect");
+	GLint cam_pos  = glGetUniformLocation(s.program, "cam_pos");
+	GLint cam_rot  = glGetUniformLocation(s.program, "cam_rot");
+	GLint cam_zoom = glGetUniformLocation(s.program, "cam_zoom");
+
+	glUniform1f(aspect,   global.window_aspect_ratio);
+	glUniform1f(cam_rot,  c.rotation);
+	glUniform2f(cam_pos,  c.position.x, c.position.y);
+	glUniform1f(cam_zoom, c.zoom);
+}
+
+void draw_sprite(Shader s, Texture texture, Vec2 position, Vec2 scale = {1, 1}, float rotation = 0, Vec4 color_hint = {1, 1, 1, 1}, float layer=0) {
+	GLint sprite_loc = glGetUniformLocation(s.program, "sprite");
+	GLint layer_loc = glGetUniformLocation(s.program, "layer");
+
+	GLint pos_loc = glGetUniformLocation(s.program, "position");
+	GLint scale_loc = glGetUniformLocation(s.program, "scale");
+	GLint rot_loc = glGetUniformLocation(s.program, "rotation");
+
+	GLint color_hint_loc = glGetUniformLocation(s.program, "color_hint");
+
+	bind_texture(texture, 0);
+	glUniform1i(sprite_loc, 0);
+
+	glUniform1f(layer_loc, layer);
+
+	glUniform2f(pos_loc, position.x, position.y);
+	glUniform2f(scale_loc, scale.x, scale.y);
+	glUniform1f(rot_loc, rotation);
+	glUniform3f(color_hint_loc, color_hint.x, color_hint.y, color_hint.z);
+
+	draw_mesh(quad_mesh);
+}
+

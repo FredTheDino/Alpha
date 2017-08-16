@@ -8,6 +8,7 @@ hopefully it will be my first shipped game.
 - Mouse input.
 - Entity system (entity component) 
 - extract a "draw\_sprite" from the main method.
+- Text rendering.
 - Camera implementation.
 ((Maybe entity component actually, since it's more inline with the procedural style.))
 - Factor out a draw sprite.

@@ -99,17 +99,6 @@ inline float value(const String& name) {
 	return value(input_map, name);
 }
 
-// 
-// Input maps have the following format:
-// # This is a comment.
-//
-// Keyboard 
-// name_of_action K a
-// name^      type^ ^Key/Key identifier.
-// 
-// Controller
-// name_of_action J BUTTON_IDENTIFIER
-// name^      type^ ^Key
 
 void poll_controller_data(InputMap& map) {
 	// if (map.controllers.size() == 0) return;
@@ -146,9 +135,6 @@ void poll_controller_data(InputMap& map) {
 			case CONTROLLER_TYPE::XBONE:
 				handle_xbone(i, c);
 				break;
-			case CONTROLLER_TYPE::UNKNOWN:
-				break;
-			case CONTROLLER_TYPE::NONE:
 			default:
 				printf("Unhandled controller type: %d\n", type);
 		}
@@ -294,6 +280,17 @@ int find_next_space(const char* p) {
 	return i;
 }
 
+// 
+// Input maps have the following format:
+// # This is a comment.
+//
+// Keyboard 
+// name_of_action K a
+// name^      type^ ^Key/Key identifier.
+// 
+// Controller
+// name_of_action J BUTTON_IDENTIFIER
+// name^      type^ ^Key
 
 bool parse_input_file(InputMap& map, String path) {
 	if (access(path.c_str(), F_OK) != 0) {
@@ -369,7 +366,7 @@ bool parse_input_file(InputMap& map, String path) {
 	return true;
 }
 
-inline Vec2 mouse_to_rhc (InputMap& map) {
+inline Vec2 mouse_to_rhc (InputMap& map=input_map) {
 	return Vec2(map.mouse_pos.x / global.window_width, map.mouse_pos.y / global.window_height);
 }
 
