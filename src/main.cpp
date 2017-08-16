@@ -88,7 +88,7 @@ void init_ppo() {
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
 
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ppo.texture.texture_id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGB, ppo.texture.texture_id, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ppo.depth);
 }
 

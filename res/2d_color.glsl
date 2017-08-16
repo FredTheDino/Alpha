@@ -1,4 +1,7 @@
-#version 150
+#version 300 es
+
+precision highp vec2;
+precision highp float;
 
 uniform float aspect;
 uniform vec2 cam_pos;
