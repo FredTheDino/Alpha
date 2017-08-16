@@ -36,6 +36,9 @@ typedef std::string String;
 
 // My stuff.
 #include "globals.h"
+#include "graphics.h"
+
+Mesh quad_mesh;
 
 // My very own containers
 //#include "containers.cpp"
@@ -46,7 +49,6 @@ typedef std::string String;
 // Stuff with dependencies.
 #include "hotloader.cpp"
 
-Mesh quad_mesh;
 
 struct PPO {
 	GLuint buffer;
@@ -196,11 +198,6 @@ void game_main() {
 
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		use_shader(color_shader);
-
-		GLint aspect   = glGetUniformLocation(color_shader.program, "aspect");
-		GLint cam_pos  = glGetUniformLocation(color_shader.program, "cam_pos");
-		GLint cam_rot  = glGetUniformLocation(color_shader.program, "cam_rot");
-		GLint cam_zoom = glGetUniformLocation(color_shader.program, "cam_zoom");
 		
 		main_camera.position.x += delta * value("right");
 		main_camera.position.x -= delta * value("left");
@@ -212,38 +209,15 @@ void game_main() {
 		main_camera.zoom /= 1 + delta * value("zoom_in");
 		main_camera.zoom *= 1 + delta * value("zoom_out");
 
-		glUniform1f(aspect, global.window_aspect_ratio);
-		glUniform1f(cam_rot, main_camera.rotation);
-		glUniform2f(cam_pos, main_camera.position.x, main_camera.position.y);
-		glUniform1f(cam_zoom, main_camera.zoom);
-		
-
-		bind_texture(mario, 0);
-		GLint sprite = glGetUniformLocation(color_shader.program, "sprite");
-		glUniform1i(sprite, 0);
-
-		GLuint loc = glGetUniformLocation(color_shader.program, "layer");
-
-		GLint x_loc = glGetUniformLocation(color_shader.program, "x");
-		GLint y_loc = glGetUniformLocation(color_shader.program, "y");
-		GLint color_scale_loc = glGetUniformLocation(color_shader.program, "color_scale");
+		send_camera_to_shader(color_shader);
 
 		float x = sin(t);
 
-		glUniform1f(x_loc, x);
-		glUniform1f(y_loc, -0.2);
-		glUniform1f(color_scale_loc, 0.1);
+		draw_sprite(color_shader, mario, Vec2(x, 0));
 
-		glUniform1f(loc, sin(t));
-		draw_mesh(quad_mesh);
+		float c = cos(t * 0.2);
 
-
-		glUniform1f(x_loc, 0);
-		glUniform1f(y_loc, 0.2);
-		glUniform1f(color_scale_loc, 1.0f);
-
-		glUniform1f(loc, 0);
-		draw_mesh(quad_mesh);
+		draw_sprite(color_shader, mario, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

@@ -11,38 +11,41 @@ uniform float cam_zoom;
 uniform sampler2D sprite;
 uniform float layer;
 
-uniform float x;
-uniform float y;
+uniform vec2 position;
+uniform vec2 scale;
+uniform float rotation;
 
-uniform float color_scale;
+uniform vec3 color_hint;
 
 #define VERT 1
 #ifdef VERT
 //
 // Vertex Shader
 //
-in vec2 position;
-in vec2 uv;
+in vec2 vert_position;
+in vec2 vert_uv;
 
 out vec2 fragUV;
 
+vec2 rotate(vec2 point, float angle) {
+	float srot = sin(angle);
+	float crot = cos(angle);
+	return vec2(
+		point.x * crot - point.y * srot, 
+		point.x * srot + point.y * crot);
+
+}
+
 void main() {
-	vec2 world_position = position + vec2(x, y);
+	vec2 world_position = rotate(vert_position * scale, rotation) + position;
 	vec2 projected = vec2(world_position + cam_pos);
 
-	float srot = sin(cam_rot);
-	float crot = cos(cam_rot);
-
-	projected = vec2(
-		projected.x * crot - projected.y * srot, 
-		projected.x * srot + projected.y * crot);
+	projected = rotate(projected, cam_rot);
 
 	projected.x /= aspect;
 
-	gl_Position = vec4(projected, layer, cam_zoom);
-	//gl_Position = vec4(position, layer, 1);
-	fragUV = uv;
-	
+	gl_Position = vec4(projected / cam_zoom, layer, 1);
+	fragUV = vert_uv;
 }
 
 #else
@@ -61,7 +64,7 @@ void main() {
 		discard;
 	}
 
-	color = texel * color_scale;
+	color = texel * vec4(color_hint, 1);
 
 	color.w = texel.w;
 }
