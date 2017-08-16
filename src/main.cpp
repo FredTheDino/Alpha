@@ -64,16 +64,17 @@ void window_close_callback(GLFWwindow* window) {
 void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 	set_window_info(new_width, new_height);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, new_width, new_height);
 
 #if POST_PROCESSING
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, global.window_width, global.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
+	glViewport(0, 0, new_width, new_height);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, global.window_width, global.window_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
 	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, new_width, new_height);
 #endif
 }
 
@@ -85,7 +86,7 @@ void init_ppo() {
 
 	glGenTextures(1, &ppo.texture.texture_id);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, global.window_width, global.window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, global.window_width, global.window_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -93,7 +94,7 @@ void init_ppo() {
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGB, ppo.texture.texture_id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGBA, ppo.texture.texture_id, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ppo.depth);
 }
 

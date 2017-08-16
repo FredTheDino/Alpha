@@ -6,13 +6,13 @@ hopefully it will be my first shipped game.
 
 ### Things to do:
 - Entity system (entity component) 
+((Maybe entity component system actually, since it's more inline with the procedural DO style.))
 - Text rendering.
-- Camera implementation.
-((Maybe entity component actually, since it's more inline with the procedural style.))
-- Factor out a draw sprite.
 - Instant GUI.
-- Maybe a file format for drawing animated sprites.
+- Maybe a file format for drawing animated sprites. With animations and sprite specifications. 
 - Clean up the Windows build. It's kinda annoying how it names the .exe "windows" and that there are 3 batch files.
-- Visual Scripting Language
+- Visual Scripting Language (Not sure...)
 Maybe make this just compile down to a very simple and limited scripting language...
-With some extra data for visuals offcourse.
+With some extra data for visuals offcourse. But that would just be limiting...
+- So... About that post processing... It's really broken.
+
