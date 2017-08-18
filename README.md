@@ -16,3 +16,5 @@ Maybe make this just compile down to a very simple and limited scripting languag
 With some extra data for visuals offcourse. But that would just be limiting...
 - So... About that post processing... It's really broken.
 
+# DUDE!!!
+Check if backface culling is doing so the post processing won't work!
