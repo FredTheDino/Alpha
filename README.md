@@ -14,7 +14,8 @@ hopefully it will be my first shipped game.
 - Visual Scripting Language (Not sure...)
 Maybe make this just compile down to a very simple and limited scripting language...
 With some extra data for visuals offcourse. But that would just be limiting...
-- So... About that post processing... It's really broken.
+Really not thinking in kinds of visual scripting, I don't know how use full it is...
+It would be good for things like making doors move and stuff like that.
 
 # DUDE!!!
 Check if backface culling is doing so the post processing won't work!
