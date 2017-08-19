@@ -49,7 +49,7 @@ Mesh quad_mesh;
 // Stuff with dependencies.
 #include "hotloader.cpp"
 
-#define POST_PROCESSING 0
+#define POST_PROCESSING 1
 
 struct PPO {
 	GLuint buffer;
@@ -64,38 +64,67 @@ void window_close_callback(GLFWwindow* window) {
 void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 	set_window_info(new_width, new_height);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, new_width, new_height);
 
 #if POST_PROCESSING
 	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 	glViewport(0, 0, new_width, new_height);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, global.window_width, global.window_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
-	
+	const int w = new_width;
+	const int h = new_height;
+	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, ppo.depth);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)ppo.buffer);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ppo.texture.texture_id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ppo.depth, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 #endif
 }
 
 // Setup the offscreen frame buffer.
 
 void init_ppo() {
-	glGenFramebuffers(1, &ppo.buffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 
+	const int w = global.window_width;
+	const int h = global.window_height;
 	glGenTextures(1, &ppo.texture.texture_id);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, global.window_width, global.window_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+/*
+ 	// OpenGL 3?
 	glGenRenderbuffers(1, &ppo.depth);
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, global.window_width, global.window_height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+*/
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGBA, ppo.texture.texture_id, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ppo.depth);
+	glGenTextures(1, &ppo.depth);
+	glBindTexture(GL_TEXTURE_2D, ppo.depth);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glGenFramebuffers(1, &ppo.buffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)ppo.buffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ppo.texture.texture_id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ppo.depth, 0);
+
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+		printf("Failed to create frame buffer\n");
 }
 
 void game_main() {
@@ -199,9 +228,7 @@ void game_main() {
 
 #if POST_PROCESSING
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGB, ppo.texture.texture_id, 0);
 #endif
-		
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		use_shader(color_shader);

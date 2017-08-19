@@ -39,7 +39,7 @@ void main() {
 	vec4 texel;
 	texel = texture(screen, uv);
 
-	float gamma = 1.1;
+	float gamma = 2.5;
 	color = vec4(
 	(texel.r - 0.5) * gamma + 0.5, 
 	(texel.g - 0.5) * gamma + 0.5, 
