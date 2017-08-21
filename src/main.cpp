@@ -204,6 +204,7 @@ void game_main() {
 	Texture mario;
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 
+
 	make_test_component(13);
 	make_test_component(1.2343f);
 

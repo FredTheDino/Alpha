@@ -187,27 +187,28 @@ void add_component(Entity_List& el, Entity_ID id, Component_Pointer ptr) {
 	e->components.push_back(ptr);
 }
 
-/*
-bool remove_component(Entity_ID id, Component_Pointer ptr) {
+bool remove_components_of_type(Entity_List& el, Entity_ID id, System_Type type) {
 	bool erased = false;
-	for (auto it : e->begin()) {
-		if (it == ptr) {
-			e->erase(it);
+	Entity& e = *get(el, id);
+	for (int i = 0; i < e.components.size(); i++) {
+		if (e.components[i].type == type) {
+			e.components.erase(e.components.begin() + i);
 			erased = true;
 		}
 	}
 	return erased;
+
 }
 
-bool remove_component(Entity_ID id, System_Type type) {
+bool remove_component(Entity_List& el, Entity_ID id, Component_Pointer ptr) {
 	bool erased = false;
-	for (auto it : e->begin()) {
-		if (it.type == type) {
-			e->erase(it);
+	Entity& e = *get(el, id);
+	for (int i = 0; i < e.components.size(); i++) {
+		if (e.components[i] == ptr) {
+			e.components.erase(e.components.begin() + i);
 			erased = true;
 		}
 	}
 	return erased;
 }
-*/
 
