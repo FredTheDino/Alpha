@@ -7,15 +7,12 @@ enum System_Type {
 };
 
 // Woo forward declariton
+/*
 struct System;
-
-// The list of systems.
-typedef Array<System*> All_Systems;
-All_Systems all_systems;
 
 struct System {
 
-	System(All_Systems& all_sys, System_Type type, void (*update)(float), void (*draw)()) {
+	System(System_Type type, void (*update)(float), void (*draw)()) {
 		assert(0 <= type);
 		assert(type < NUM_SYSTEM_TYPES);
 
@@ -27,8 +24,6 @@ struct System {
 		this->type = type;
 		this->update = update;
 		this->draw = draw;
-	
-		all_sys[type] = this;
 	}
 
 	System_Type type;
@@ -39,41 +34,26 @@ struct System {
 	// Don't know if this should be here....
 	// Array<void*> components;
 };
-
-void update_system(All_Systems all_sys, float delta) {
-	auto size = all_sys.size();
-	for (int i = 0; i < size; i++) {
-		auto sys = all_sys[i];
-		sys->update(delta);
-	}
-}
-
-void draw_system(All_Systems all_sys) {
-	auto size = all_sys.size();
-	for (int i = 0; i < size; i++) {
-		auto sys = all_sys[i];
-		sys->draw();
-	}
-}
+*/
 
 // Entity stuff...
 
 struct Component_Pointer {
-	int component_id;
+	int id;
 	System_Type type;
 
 	bool operator== (const Component_Pointer& other) const {
-		return component_id == other.component_id 
+		return id == other.id 
 			&& type == other.type;
 	}
 };
 
 struct Entity_ID {
-	int position;
-	int unique_id;
+	int id;
+	int u_id;
 
 	bool operator== (const Entity_ID& other) const {
-		return position == other.position && unique_id == other.unique_id;
+		return id == other.id && u_id == other.u_id;
 	}
 };
 
@@ -97,7 +77,7 @@ struct Entity_List {
 };
 
 Entity* get(Entity_List& el, Entity_ID id) {
-	Entity* other = &el.list[id.position];
+	Entity* other = &el.list[id.id];
 	if (other->id == id) {
 		return other;
 	}
@@ -118,10 +98,10 @@ Entity_ID new_entity(Entity_List& el) {
 
 	el.list[pos] = Entity();
 	Entity_ID& id = el.list[pos].id;
-	id.position = pos;
+	id.id = pos;
 	do {
-		id.unique_id += 1;
-	} while (id.unique_id == 0);
+		id.u_id += 1;
+	} while (id.u_id == 0);
 
 	return id;
 }
@@ -129,12 +109,12 @@ Entity_ID new_entity(Entity_List& el) {
 bool remove_entity(Entity_List& el, Entity_ID id) {
 	Entity* e = get(el, id);
 	if (!e) return false;
-	if (e->id.position == -1) return false;
+	if (e->id.id == -1) return false;
 	// So we know there's nothing here.
-	e->id.position = -1;
+	e->id.id = -1;
 	
 	// All done.
-	el.free_pos.push(id.position);
+	el.free_pos.push(id.id);
 	return true;
 }
 
@@ -143,20 +123,50 @@ namespace file {
 	void test_draw();
 }
 
-struct Test_Component;
+void* systems[System_Type::NUM_SYSTEM_TYPES];
 
-struct Test {
-	Test() : s(all_systems, TEST, file::test_update, file::test_draw) {}
-	// Note, this has to be first, this is so they share pointer.
-	System s;
-	Array<Test_Component> components;
-} test;
-// A way to do polymorphism without using C++ inheritance.
-System* test_system = (System*)(void*)&test;
+struct Component {
+	int id;
+	System_Type type;
+	int next_free = -1;
+};
 
 struct Test_Component {
+	Component c;
 	float data;
 };
+
+void update(float delta) {
+	printf("Updating!\n");
+}
+
+void add(void* _c) {
+	Test_Component* c    = (Test_Component*) _c;
+	Component*      comp = (Component*) _c; 
+	if (next_free = -1) {
+		test.components.push_back(*c);
+	} else {
+		int id = 0;
+	}
+}
+
+struct Test_System {
+	Test_System() {
+		systems[System_Type::TEST] = this;
+	}
+
+	~Test_System() {
+		systems[System_Type::TEST] = nullptr;
+	}
+
+	// Note, this has to be first, this is so they share pointer.
+	Array<Test_Component> components;
+	int next_free = -1;
+
+	void (*update)(float) = update;
+
+	void (*add)(void*);
+} test;
 
 Component_Pointer make_test_component(float data) {
 	Component_Pointer ptr;
