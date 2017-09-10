@@ -5,8 +5,7 @@ I don't know what this will be yet, but
 hopefully it will be my first shipped game.
 
 ### Things to do:
-- Entity system (entity component) 
-((Maybe entity component system actually, since it's more inline with the procedural DO style.))
+- Entity Components, curse you OOP! // The basics have been implemented, just need to test it and make some actual commponents. "fixed\_update" and "remove" might need to be called in more placees.
 - Text rendering.
 - Instant GUI mode.
 - Instant drawing oof polygons? That are later flushed to the graphics card... I like that...
@@ -17,3 +16,6 @@ Maybe make this just compile down to a very simple and limited scripting languag
 With some extra data for visuals offcourse. But that would just be limiting...
 Really not thinking in kinds of visual scripting, I don't know how use full it is...
 It would be good for things like making doors move and stuff like that.
+
+### Game Idea
+A game about lonelyness. 

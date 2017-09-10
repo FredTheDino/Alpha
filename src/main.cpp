@@ -204,10 +204,6 @@ void game_main() {
 	Texture mario;
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 
-
-	make_test_component(13);
-	make_test_component(1.2343f);
-
 	float t = 0.0f;
 	float delta = 0.0f;
 	glfwSetTime(0);
@@ -222,11 +218,7 @@ void game_main() {
 
 		update_input();
 
-		update_system(all_systems, delta);
-
 		update_audio();
-
-		draw_system(all_systems);
 
 		if (is_down("exit")) {
 			global.should_quit = true;
