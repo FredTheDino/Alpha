@@ -11,10 +11,12 @@ zoom_in K e
 zoom_out K q
 
 sound K h
-sound J CROSS
-sound J SQUARE
-sound J SELECT
+sound J CROSS 0
+sound J SQUARE 1
+sound J TRIANGLE
 
 some_other J LEFT_UP
-left  J LEFT_LEFT
-left  J RIGHT_LEFT
+left  J LEFT_LEFT 
+left  J RIGHT_LEFT 
+right J LEFT_RIGHT 
+right J RIGHT_RIGHT 

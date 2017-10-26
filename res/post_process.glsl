@@ -34,12 +34,12 @@ int pixels_x = 300;
 int pixels_y = 300;
 
 void main() {
-	// vec2 uv = vec2(floor(fragUV.x * pixels_x) / pixels_x, floor(fragUV.y * pixels_y) / pixels_y);
+	//vec2 uv = vec2(floor(fragUV.x * pixels_x) / pixels_x, floor(fragUV.y * pixels_y) / pixels_y);
 	vec2 uv = fragUV;
 	vec4 texel;
 	texel = texture(screen, uv);
 
-	float gamma = 2.5;
+	float gamma = 1.5;
 	color = vec4(
 	(texel.r - 0.5) * gamma + 0.5, 
 	(texel.g - 0.5) * gamma + 0.5, 

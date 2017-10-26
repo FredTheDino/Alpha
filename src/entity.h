@@ -2,7 +2,6 @@ enum Component_Type {
 	NO_TYPE,
 };
 
-
 struct Entity;
 
 struct Component {

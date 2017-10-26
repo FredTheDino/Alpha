@@ -17,8 +17,8 @@ enum INPUT_STATE {
 struct InputAction {
 	String input_name;
 	bool is_keyboard = true;
+	int controller = -1;
 	int input = 0;
-	//int modifyers = 0; // Used for keyboards for Alt, Ctrl, Shift etc...
 	INPUT_STATE state = INPUT_STATE::UP;
 	float value = 0.0f;
 };
