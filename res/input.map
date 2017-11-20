@@ -7,8 +7,11 @@ up    K w
 down  K s
 
 turn  K x
+turn  J R1
 zoom_in K e
+zoom_in J R2
 zoom_out K q
+zoom_out J L2
 
 sound K h
 sound J CROSS 0
@@ -20,3 +23,6 @@ left  J LEFT_LEFT
 left  J RIGHT_LEFT 
 right J LEFT_RIGHT 
 right J RIGHT_RIGHT 
+
+up J LEFT_UP 
+down J LEFT_DOWN

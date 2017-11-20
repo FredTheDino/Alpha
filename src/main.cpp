@@ -181,6 +181,23 @@ void game_main() {
 	Sound ha;
 	register_hotloadable_asset(hot_loader, &ha, "res/a.wav");
 
+	{
+		//////////////////////////
+		// Random entity tests! //
+		//////////////////////////
+
+		// I'm actually happy with this!
+		EntityList list;
+		auto a = create_entity(list);
+		auto b = create_entity(list);
+		remove_entity(list, b);
+		b = create_entity(list);
+		remove_entity(list, b);
+		b = create_entity(list);
+		remove_entity(list, a);
+		a = create_entity(list);
+	}
+
 	// Load the input map!
 	register_hotloadable_asset(hot_loader, &input_map, "res/input.map");
 
