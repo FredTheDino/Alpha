@@ -142,9 +142,6 @@ void game_main() {
 
 	glfwSetWindowCloseCallback(global.window, window_close_callback);
 	glfwSetWindowSizeCallback(global.window, window_resize_callback);
-	// This doesn't seem to work properly
-	//glfwSetJoystickCallback(controller_connect_callback);
-
 	glfwMakeContextCurrent(global.window);	
 
 	// @FIXME, we dont allow this to be set ATM, that would probably be smart.
@@ -187,15 +184,24 @@ void game_main() {
 		//////////////////////////
 
 		// I'm actually happy with this!
-		EntityList list;
-		auto a = create_entity(list);
-		auto b = create_entity(list);
-		remove_entity(list, b);
-		b = create_entity(list);
-		remove_entity(list, b);
-		b = create_entity(list);
-		remove_entity(list, a);
-		a = create_entity(list);
+		auto a = create_entity(entity_list);
+		auto b = create_entity(entity_list);
+		remove_entity(entity_list, b);
+		b = create_entity(entity_list);
+		remove_entity(entity_list, b);
+		b = create_entity(entity_list);
+		remove_entity(entity_list, a);
+		a = create_entity(entity_list);
+
+		add_component(entity_list, a, TRANSFORM);
+		add_component(entity_list, a, BODY);
+
+		add_component(entity_list, b, TRANSFORM);
+		add_component(entity_list, b, BODY);
+
+		update_systems(entity_list, 0.5f);
+		update_systems(entity_list, 0.5f);
+		update_systems(entity_list, 0.5f);
 	}
 
 	// Load the input map!
