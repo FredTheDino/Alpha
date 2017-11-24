@@ -1,6 +1,8 @@
 // Entity systems the easy way.
 #include "entity.h"
 
+#define CHECK_IF_ALIVE(a) if (!isAlive(list, id)) {printf("Trying to access dead entity %d:(%d)\n", id.pos, id.uid); return(a);}
+
 bool inline isAlive(const EntityList& list, const EntityID id) {
 	return list.uid[id.pos] == id.uid;
 }
@@ -27,12 +29,21 @@ EntityID create_entity(EntityList& list) {
 
 
 void remove_entity(EntityList& list, EntityID id) {
-	if (!isAlive(list, id)) return; // Can't kill it twice!
+	CHECK_IF_ALIVE(void());
+	// if (!isAlive(list, id)) return; // Can't kill it twice!
 	printf("deleted pos: %d, uid: %d\n", id.pos, id.uid);
 
 	// Remove it.
 	list.uid[id.pos] = list.next_free;
 	list.next_free = -id.pos;
+
+	for (int i = 0; i < NUM_COMPONENT_TYPES; i++) {
+		list.comp[id.pos][i] = 0;
+	}
+
+	for (int i = 0; i < NUM_SYSTEM_TYPES; i++) {
+		list.system[id.pos][i] = 0;
+	}
 	
 	// Check if it is the end one that is deleted
 	if (id.pos == list.max_entity_pos) {
@@ -44,36 +55,67 @@ void remove_entity(EntityList& list, EntityID id) {
 }
 
 inline void add_component(EntityList& list, EntityID id, ComponentType type) {
+	CHECK_IF_ALIVE(void());
 	list.comp[id.pos][type] = true;
 }
 
+inline void remove_component(EntityList& list, EntityID id, ComponentType type) {
+	CHECK_IF_ALIVE(void());
+	list.comp[id.pos][type] = false;
+}
+
+inline void set_component(EntityList& list, EntityID id, ComponentType type, bool value) {
+	CHECK_IF_ALIVE(void());
+	list.comp[id.pos][type] = value;
+}
+
+inline void add_system(EntityList& list, EntityID id, SystemType type) {
+	CHECK_IF_ALIVE(void());
+	list.system[id.pos][type] = true;
+}
+
+inline void remove_system(EntityList& list, EntityID id, SystemType type) {
+	CHECK_IF_ALIVE(void());
+	list.system[id.pos][type] = false;
+}
+
+inline void set_system(EntityList& list, EntityID id, SystemType type, bool value) {
+	CHECK_IF_ALIVE(void());
+	list.system[id.pos][type] = value;
+}
+
 void* get_component(EntityList& list, EntityID id, ComponentType type) {
+	CHECK_IF_ALIVE(nullptr);
 	switch (type) {
 		case TRANSFORM:
 			return &list.transform_c[id.pos];
 		case BODY:
 			return &list.body_c[id.pos];
-		case NUM_COMPONENTS:
+		case NUM_COMPONENT_TYPES:
 		default:
 			return nullptr;
 	}
 }
 
 inline EntityList::Transform* get_transform(EntityList& list, EntityID id) {
+	CHECK_IF_ALIVE(nullptr);
 	return &list.transform_c[id.pos];
 }
 
 inline EntityList::Body* get_body(EntityList& list, EntityID id) {
+	CHECK_IF_ALIVE(nullptr);
 	return &list.body_c[id.pos];
 }
 
 void update_systems(EntityList& list, float delta) {
-	for (int i = 0; i < list.max_entity_pos; i++) {
-		if (list.comp[i][TRANSFORM] && list.comp[i][BODY]) {
-			// Fall system
-			list.body_c[i].velocity = list.body_c[i].velocity + Vec2(0, delta);
-			list.transform_c[i].position = list.transform_c[i].position + (list.body_c[i].velocity * delta);
-			printf("(#%d) @%f, %f\n", i, list.transform_c[i].position.x, list.transform_c[i].position.y);
+	for (int i = 0; i <= list.max_entity_pos; i++) {
+		if (list.system[i][FALL_SYSTEM]) {
+			// Maybe exrtract this out to an inline function...
+			if (list.comp[i][TRANSFORM] && list.comp[i][BODY]) {
+				// Fall system
+				list.body_c[i].velocity = list.body_c[i].velocity + Vec2(0, delta);
+				list.transform_c[i].position = list.transform_c[i].position + (list.body_c[i].velocity * delta);
+			}
 		}
 	}
 };

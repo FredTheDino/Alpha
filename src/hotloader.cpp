@@ -107,7 +107,7 @@ void register_hotloadable_asset(HotLoader& loader, Shader* _asset, String path, 
 void register_hotloadable_asset(HotLoader& loader, 
 		Texture* _asset, String path, 
 		bool linear_filtering = true, 
-		int sprites_x = 0, int sprites_y = 0, 
+		int sprites_x = 1, int sprites_y = 1, 
 		bool use_mipmaps = false) {
 	String file_path = find_texture_file(path);
 

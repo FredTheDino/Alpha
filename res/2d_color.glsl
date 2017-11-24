@@ -2,6 +2,7 @@
 
 // This is needed for ES.
 precision highp float;
+precision highp int;
 
 uniform float aspect;
 uniform vec2  cam_pos;
@@ -9,6 +10,8 @@ uniform float cam_rot;
 uniform float cam_zoom;
 
 uniform sampler2D sprite;
+uniform int sub_sprite;
+uniform ivec2 sub_sprite_dim;
 uniform float layer;
 
 uniform vec2  position;
@@ -45,7 +48,17 @@ void main() {
 	projected.x /= aspect;
 
 	gl_Position = vec4(projected / cam_zoom, layer, 1);
-	fragUV = vert_uv;
+
+	// Assumes a unit square in the coordinates.
+	if (sub_sprite_dim.x <= 1 && sub_sprite_dim.y <= 1) {
+		fragUV = vert_uv;
+	} else {
+		int x_uv = sub_sprite % sub_sprite_dim.x;
+		int y_uv = (sub_sprite - x_uv) / sub_sprite_dim.y;
+
+		fragUV.x = (vert_uv.x + float(x_uv)) / float(sub_sprite_dim.x);
+		fragUV.y = (vert_uv.y + float(y_uv)) / float(sub_sprite_dim.y);
+	}
 }
 
 #else

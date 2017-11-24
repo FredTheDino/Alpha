@@ -189,18 +189,21 @@ void game_main() {
 		remove_entity(entity_list, b);
 		b = create_entity(entity_list);
 		remove_entity(entity_list, b);
-		b = create_entity(entity_list);
 		remove_entity(entity_list, a);
+		b = create_entity(entity_list);
 		a = create_entity(entity_list);
 
 		add_component(entity_list, a, TRANSFORM);
 		add_component(entity_list, a, BODY);
+		//add_system(entity_list, a, FALL_SYSTEM);;
 
 		add_component(entity_list, b, TRANSFORM);
 		add_component(entity_list, b, BODY);
+		add_system(entity_list, b, FALL_SYSTEM);
 
 		update_systems(entity_list, 0.5f);
 		update_systems(entity_list, 0.5f);
+		add_system(entity_list, a, FALL_SYSTEM);;
 		update_systems(entity_list, 0.5f);
 	}
 
@@ -224,8 +227,11 @@ void game_main() {
 	Shader post_process_shader;
 	register_hotloadable_asset(hot_loader, &post_process_shader, "res/post_process.glsl", "post");
 
+	// Maybe move the hotloader to the constructor? It's maybe more convinient...
 	Texture mario;
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
+	mario.sprites_y = 1;
+	mario.sprites_x = 1;
 
 	float t = 0.0f;
 	float delta = 0.0f;
@@ -254,30 +260,31 @@ void game_main() {
 #if POST_PROCESSING
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 #endif
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+		{
+			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-		use_shader(color_shader);
-		
-		main_camera.position.x += delta * value("right");
-		main_camera.position.x -= delta * value("left");
-		main_camera.position.y += delta * value("up");
-		main_camera.position.y -= delta * value("down");
+			use_shader(color_shader);
 
-		main_camera.rotation += delta * value("turn");
+			main_camera.position.x += delta * value("right");
+			main_camera.position.x -= delta * value("left");
+			main_camera.position.y += delta * value("up");
+			main_camera.position.y -= delta * value("down");
 
-		main_camera.zoom /= 1 + delta * value("zoom_in");
-		main_camera.zoom *= 1 + delta * value("zoom_out");
+			main_camera.rotation += delta * value("turn");
 
-		send_camera_to_shader(color_shader);
+			main_camera.zoom /= 1 + delta * value("zoom_in");
+			main_camera.zoom *= 1 + delta * value("zoom_out");
 
-		float x = sin(t);
+			send_camera_to_shader(color_shader);
 
-		draw_sprite(color_shader, mario, Vec2(x, 0));
+			float x = sin(t);
 
-		float c = cos(t * 0.2);
+			draw_sprite(color_shader, mario, 1, Vec2(x, 0));
 
-		draw_sprite(color_shader, mario, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
+			float c = cos(t * 0.2);
 
+			draw_sprite(color_shader, mario, 0, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
+		}
 		
 		// Post processing.
 #if POST_PROCESSING

@@ -307,7 +307,7 @@ void delete_texture(Texture& t) {
 	glDeleteTextures(1, &t.texture_id);
 }
 
-void bind_texture(Texture& t, int texture_slot) {
+void bind_texture(Texture const & t, int texture_slot) {
 	glActiveTexture(GL_TEXTURE0 + texture_slot);
 	glBindTexture(GL_TEXTURE_2D, t.texture_id);
 }
@@ -321,11 +321,12 @@ void bind_texture(Texture& t, int texture_slot) {
 // multiple shaders.
 //
 
+#define GET_LOC(name) glGetUniformLocation(s.program, name);
 void send_camera_to_shader(Shader s, Camera c = main_camera) {
-	GLint aspect   = glGetUniformLocation(s.program, "aspect");
-	GLint cam_pos  = glGetUniformLocation(s.program, "cam_pos");
-	GLint cam_rot  = glGetUniformLocation(s.program, "cam_rot");
-	GLint cam_zoom = glGetUniformLocation(s.program, "cam_zoom");
+	GLint aspect   = GET_LOC("aspect");
+	GLint cam_pos  = GET_LOC("cam_pos");
+	GLint cam_rot  = GET_LOC("cam_rot");
+	GLint cam_zoom = GET_LOC("cam_zoom");
 
 	glUniform1f(aspect,   global.window_aspect_ratio);
 	glUniform1f(cam_rot,  c.rotation);
@@ -333,18 +334,24 @@ void send_camera_to_shader(Shader s, Camera c = main_camera) {
 	glUniform1f(cam_zoom, c.zoom);
 }
 
-void draw_sprite(Shader s, Texture texture, Vec2 position, Vec2 scale = {1, 1}, float rotation = 0, Vec4 color_hint = {1, 1, 1, 1}, float layer=0) {
-	GLint sprite_loc = glGetUniformLocation(s.program, "sprite");
-	GLint layer_loc = glGetUniformLocation(s.program, "layer");
+void draw_sprite(Shader s, const Texture& texture, int sub_sprite, 
+		Vec2 position, Vec2 scale = {1, 1}, float rotation = 0, 
+		Vec4 color_hint = {1, 1, 1, 1}, float layer = 0) {
+	GLint sprite_loc =         GET_LOC("sprite");
+	GLint sub_sprite_dim_loc = GET_LOC("sub_sprite_dim");
+	GLint sub_sprite_loc =     GET_LOC("sub_sprite");
+	GLint layer_loc =          GET_LOC("layer");
 
-	GLint pos_loc = glGetUniformLocation(s.program, "position");
-	GLint scale_loc = glGetUniformLocation(s.program, "scale");
-	GLint rot_loc = glGetUniformLocation(s.program, "rotation");
+	GLint pos_loc =   GET_LOC("position");
+	GLint scale_loc = GET_LOC("scale");
+	GLint rot_loc =   GET_LOC("rotation");
 
-	GLint color_hint_loc = glGetUniformLocation(s.program, "color_hint");
+	GLint color_hint_loc = GET_LOC("color_hint");
 
 	bind_texture(texture, 0);
 	glUniform1i(sprite_loc, 0);
+	glUniform2i(sub_sprite_dim_loc, texture.sprites_x, texture.sprites_y);
+	glUniform1i(sub_sprite_loc, sub_sprite);
 
 	glUniform1f(layer_loc, layer);
 
@@ -355,4 +362,6 @@ void draw_sprite(Shader s, Texture texture, Vec2 position, Vec2 scale = {1, 1}, 
 
 	draw_mesh(quad_mesh);
 }
+
+#undef GET_LOC
 
