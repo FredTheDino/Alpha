@@ -23,7 +23,7 @@ EntityID create_entity(EntityList& list) {
 
 	id.uid = ++list.curr_uid;
 	list.uid[id.pos] = id.uid;
-	printf("pos: %d, uid: %d\n", id.pos, id.uid);
+	// printf("pos: %d, uid: %d\n", id.pos, id.uid);
 	return id;
 }
 
@@ -31,7 +31,7 @@ EntityID create_entity(EntityList& list) {
 void remove_entity(EntityList& list, EntityID id) {
 	CHECK_IF_ALIVE(void());
 	// if (!isAlive(list, id)) return; // Can't kill it twice!
-	printf("deleted pos: %d, uid: %d\n", id.pos, id.uid);
+	// printf("deleted pos: %d, uid: %d\n", id.pos, id.uid);
 
 	// Remove it.
 	list.uid[id.pos] = list.next_free;
@@ -87,10 +87,12 @@ inline void set_system(EntityList& list, EntityID id, SystemType type, bool valu
 void* get_component(EntityList& list, EntityID id, ComponentType type) {
 	CHECK_IF_ALIVE(nullptr);
 	switch (type) {
-		case TRANSFORM:
+		case TRANSFORM_COMPONENT:
 			return &list.transform_c[id.pos];
-		case BODY:
+		case BODY_COMPONENT:
 			return &list.body_c[id.pos];
+		case SPRITE_COMPONENT:
+			return &list.sprite_c[id.pos];
 		case NUM_COMPONENT_TYPES:
 		default:
 			return nullptr;
@@ -107,15 +109,40 @@ inline EntityList::Body* get_body(EntityList& list, EntityID id) {
 	return &list.body_c[id.pos];
 }
 
+inline EntityList::Sprite* get_sprite(EntityList& list, EntityID id) {
+	CHECK_IF_ALIVE(nullptr);
+	return &list.sprite_c[id.pos];
+}
+
+void inline fall_system(EntityList& list, float delta, int i) {
+	if (list.comp[i][TRANSFORM_COMPONENT] && list.comp[i][BODY_COMPONENT]) {
+		// Fall system
+		list.body_c[i].velocity = list.body_c[i].velocity + Vec2(0, delta);
+		list.transform_c[i].position = list.transform_c[i].position + (list.body_c[i].velocity * delta);
+	}
+}
+
+void inline simple_sprite_system(EntityList& list, float delta, int i) {
+	if (list.comp[i][SPRITE_COMPONENT] && list.comp[i][TRANSFORM_COMPONENT]) {
+		draw_sprite(*list.color_shader, 
+				list.sprite_c[i].sprite, list.sprite_c[i].sub_sprite, 
+				list.transform_c[i].position,
+				list.transform_c[i].scale, 
+				list.transform_c[i].rotation, 
+				Vec4(1, 1, 1, 1),
+				list.sprite_c[i].layer);
+	}
+}
+
 void update_systems(EntityList& list, float delta) {
 	for (int i = 0; i <= list.max_entity_pos; i++) {
+		if (list.uid[i] < 0) continue;
 		if (list.system[i][FALL_SYSTEM]) {
-			// Maybe exrtract this out to an inline function...
-			if (list.comp[i][TRANSFORM] && list.comp[i][BODY]) {
-				// Fall system
-				list.body_c[i].velocity = list.body_c[i].velocity + Vec2(0, delta);
-				list.transform_c[i].position = list.transform_c[i].position + (list.body_c[i].velocity * delta);
-			}
+			fall_system(list, delta, i);
+		}
+
+		if (list.system[i][SIMPLE_SPRITE_SYSTEM]) {
+			simple_sprite_system(list, delta, i);
 		}
 	}
 };

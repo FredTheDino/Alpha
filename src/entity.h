@@ -6,9 +6,9 @@ struct EntityID {
 };
 
 enum ComponentType {
-	TRANSFORM,
-	BODY,
-	SPRITE,
+	TRANSFORM_COMPONENT,
+	BODY_COMPONENT,
+	SPRITE_COMPONENT,
 
 	NUM_COMPONENT_TYPES
 };
@@ -32,7 +32,7 @@ struct EntityList {
 
 	struct Transform {
 		Vec2 position;
-		Vec2 scale;
+		Vec2 scale = {1, 1};
 		float rotation;
 	};
 	Transform transform_c[MAX_NUM_ENTITIES] = {};
@@ -43,8 +43,12 @@ struct EntityList {
 	Body body_c[MAX_NUM_ENTITIES] = {};
 
 	struct Sprite {
-		Texture t;
+		Texture sprite;
+		int sub_sprite = 0;
+		float layer = 0;
 	};
+	Shader* color_shader;
+
 	Sprite sprite_c[MAX_NUM_ENTITIES] = {};
 
 } entity_list;

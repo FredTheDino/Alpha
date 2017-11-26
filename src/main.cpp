@@ -178,35 +178,6 @@ void game_main() {
 	Sound ha;
 	register_hotloadable_asset(hot_loader, &ha, "res/a.wav");
 
-	{
-		//////////////////////////
-		// Random entity tests! //
-		//////////////////////////
-
-		// I'm actually happy with this!
-		auto a = create_entity(entity_list);
-		auto b = create_entity(entity_list);
-		remove_entity(entity_list, b);
-		b = create_entity(entity_list);
-		remove_entity(entity_list, b);
-		remove_entity(entity_list, a);
-		b = create_entity(entity_list);
-		a = create_entity(entity_list);
-
-		add_component(entity_list, a, TRANSFORM);
-		add_component(entity_list, a, BODY);
-		//add_system(entity_list, a, FALL_SYSTEM);;
-
-		add_component(entity_list, b, TRANSFORM);
-		add_component(entity_list, b, BODY);
-		add_system(entity_list, b, FALL_SYSTEM);
-
-		update_systems(entity_list, 0.5f);
-		update_systems(entity_list, 0.5f);
-		add_system(entity_list, a, FALL_SYSTEM);;
-		update_systems(entity_list, 0.5f);
-	}
-
 	// Load the input map!
 	register_hotloadable_asset(hot_loader, &input_map, "res/input.map");
 
@@ -223,6 +194,7 @@ void game_main() {
 
 	quad_mesh = new_mesh(verticies);
 	Shader color_shader;
+	entity_list.color_shader = &color_shader;
 	register_hotloadable_asset(hot_loader, &color_shader, "res/2d_color.glsl", "2d_color");
 	Shader post_process_shader;
 	register_hotloadable_asset(hot_loader, &post_process_shader, "res/post_process.glsl", "post");
@@ -231,7 +203,27 @@ void game_main() {
 	Texture mario;
 	register_hotloadable_asset(hot_loader, &mario, "res/mario");
 	mario.sprites_y = 1;
-	mario.sprites_x = 1;
+	mario.sprites_x = 2;
+	
+	///////////////
+	// ENTITIES! //
+	///////////////
+	// I'm actually happy with this!
+	auto a = create_entity(entity_list);
+	auto b = create_entity(entity_list);
+
+	add_component(entity_list, a, TRANSFORM_COMPONENT);
+	add_component(entity_list, a, SPRITE_COMPONENT);
+	add_system(entity_list, a, SIMPLE_SPRITE_SYSTEM);
+	get_sprite(entity_list, a)->sprite = mario;
+
+	add_component(entity_list, b, TRANSFORM_COMPONENT);
+	add_component(entity_list, b, SPRITE_COMPONENT);
+	add_system(entity_list, b, SIMPLE_SPRITE_SYSTEM);
+	get_sprite(entity_list, b)->sprite = mario;
+	get_sprite(entity_list, b)->sub_sprite = 1;
+
+
 
 	float t = 0.0f;
 	float delta = 0.0f;
@@ -278,12 +270,18 @@ void game_main() {
 			send_camera_to_shader(color_shader);
 
 			float x = sin(t);
-
-			draw_sprite(color_shader, mario, 1, Vec2(x, 0));
-
 			float c = cos(t * 0.2);
+			entity_list.transform_c[a.pos].position.x = x;
+			entity_list.transform_c[a.pos].position.y = 0;
+			entity_list.transform_c[a.pos].rotation = x;
+			entity_list.sprite_c[a.pos].layer = x;
+			entity_list.transform_c[b.pos].scale.y = c;
+			update_systems(entity_list, delta);
 
-			draw_sprite(color_shader, mario, 0, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
+			// draw_sprite(color_shader, mario, 1, Vec2(x, 0));
+
+
+			// draw_sprite(color_shader, mario, 0, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
 		}
 		
 		// Post processing.
