@@ -227,7 +227,7 @@ void game_main() {
 
 	float t = 0.0f;
 	float delta = 0.0f;
-	glfwSetTime(0);
+	glfwSetTime(t);
 	while (!global.should_quit) {
 		float new_t = glfwGetTime();
 		delta = t - new_t;
@@ -271,17 +271,13 @@ void game_main() {
 
 			float x = sin(t);
 			float c = cos(t * 0.2);
-			entity_list.transform_c[a.pos].position.x = x;
-			entity_list.transform_c[a.pos].position.y = 0;
-			entity_list.transform_c[a.pos].rotation = x;
+			auto& a_t = entity_list.transform_c[a.pos];
+			a_t.position.x = x;
+			a_t.position.y = 0;
+			a_t.rotation = x;
 			entity_list.sprite_c[a.pos].layer = x;
 			entity_list.transform_c[b.pos].scale.y = c;
 			update_systems(entity_list, delta);
-
-			// draw_sprite(color_shader, mario, 1, Vec2(x, 0));
-
-
-			// draw_sprite(color_shader, mario, 0, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
 		}
 		
 		// Post processing.

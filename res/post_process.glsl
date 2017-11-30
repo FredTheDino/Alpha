@@ -41,9 +41,9 @@ void main() {
 
 	float gamma = 1.5;
 	color = vec4(
-	(texel.r - 0.5) * gamma + 0.5, 
-	(texel.g - 0.5) * gamma + 0.5, 
-	(texel.b - 0.5) * gamma + 0.5, 1.0);
+		(texel.r - 0.5) * gamma + 0.5, 
+		(texel.g - 0.5) * gamma + 0.5, 
+		(texel.b - 0.5) * gamma + 0.5, 1.0);
 	color.w = 1.0;
 }
 
