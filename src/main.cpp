@@ -36,6 +36,7 @@ typedef std::string String;
 
 // My stuff.
 #include "globals.h"
+#include "math.h"
 #include "graphics.h"
 
 Mesh quad_mesh;
@@ -63,16 +64,16 @@ void window_close_callback(GLFWwindow* window) {
 }
 
 void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
-	set_window_info(new_width, new_height);
+	set_window_info(new_width, new_height, global.msaa);
 
 	glViewport(0, 0, new_width, new_height);
 
 #if POST_PROCESSING
 	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
-	glViewport(0, 0, new_width, new_height);
 
-	const int w = new_width;
-	const int h = new_height;
+	const int w = global.sample_width;
+	const int h = global.sample_height;
+	glViewport(0, 0, w, h);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -92,8 +93,8 @@ void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 
 void init_ppo() {
 
-	const int w = global.window_width;
-	const int h = global.window_height;
+	const int w = global.sample_width;
+	const int h = global.sample_height;
 	glGenTextures(1, &ppo.texture.texture_id);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -103,7 +104,7 @@ void init_ppo() {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 /*
- 	// OpenGL 3?
+	// OpenGL 3?
 	glGenRenderbuffers(1, &ppo.depth);
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
@@ -128,8 +129,7 @@ void init_ppo() {
 		printf("Failed to create frame buffer\n");
 }
 
-void game_main() {
-	// Initalize window.
+inline void init_engine() {
 	if (!glfwInit()) {
 		printf("[Init] Failed to initalize GLFW - Window and IO lib.");
 		assert(0);
@@ -155,32 +155,23 @@ void game_main() {
 	/////////////
 	// INIT GL //
 	/////////////
-	
-	// GL default settings.
 	printf("[OpenGL] Version: %s\n", glGetString(GL_VERSION));
 	printf("[OpenGL] Vendor: %s\n", glGetString(GL_VENDOR));
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.9, 0.8, 0.21, 1.0);
 
 #if POST_PROCESSING
 	init_ppo();
 #endif
-
-	glClearColor(0.9, 0.8, 0.21, 1.0);
-
-	/////////////
-	// INIT AL //
-	/////////////
 	init_audio();
+	window_resize_callback(global.window, global.window_width, global.window_height);
 
-	Sound ha;
-	register_hotloadable_asset(hot_loader, &ha, "res/a.wav");
-
-	// Load the input map!
 	register_hotloadable_asset(hot_loader, &input_map, "res/input.map");
 
+	// Init the graphics
 	Array<Vertex> verticies;
 	verticies.reserve(6);
 
@@ -193,37 +184,24 @@ void game_main() {
 	verticies.push_back(Vertex(-0.5, -0.5, 0, 1));
 
 	quad_mesh = new_mesh(verticies);
-	Shader color_shader;
-	entity_list.color_shader = &color_shader;
-	register_hotloadable_asset(hot_loader, &color_shader, "res/2d_color.glsl", "2d_color");
-	Shader post_process_shader;
-	register_hotloadable_asset(hot_loader, &post_process_shader, "res/post_process.glsl", "post");
+}
 
-	// Maybe move the hotloader to the constructor? It's maybe more convinient...
-	Texture mario;
-	register_hotloadable_asset(hot_loader, &mario, "res/mario");
-	mario.sprites_y = 1;
-	mario.sprites_x = 2;
-	
-	///////////////
-	// ENTITIES! //
-	///////////////
-	// I'm actually happy with this!
-	auto a = create_entity(entity_list);
-	auto b = create_entity(entity_list);
+void game_main() {
+	init_engine();
 
-	add_component(entity_list, a, TRANSFORM_COMPONENT);
-	add_component(entity_list, a, SPRITE_COMPONENT);
-	add_system(entity_list, a, SIMPLE_SPRITE_SYSTEM);
-	get_sprite(entity_list, a)->sprite = mario;
-
-	add_component(entity_list, b, TRANSFORM_COMPONENT);
-	add_component(entity_list, b, SPRITE_COMPONENT);
-	add_system(entity_list, b, SIMPLE_SPRITE_SYSTEM);
-	get_sprite(entity_list, b)->sprite = mario;
-	get_sprite(entity_list, b)->sub_sprite = 1;
+	// Load stuff
+	Sound ha("res/a.wav");
 
 
+	// Load font test!
+	auto droid_sans = load_font_from_files("res/fonts/droid_sans");
+	auto text_mesh = new_text_mesh(droid_sans, "Hello World");
+
+
+	Shader color_shader("res/2d_color.glsl", "2d_color");
+	Shader post_process_shader("res/post_process.glsl", "post");
+
+	Texture mario("res/mario", 1, 2);
 
 	float t = 0.0f;
 	float delta = 0.0f;
@@ -267,17 +245,24 @@ void game_main() {
 			main_camera.zoom /= 1 + delta * value("zoom_in");
 			main_camera.zoom *= 1 + delta * value("zoom_out");
 
+			if (pressed("toggle_aa")) {
+				int msaa = global.msaa * 2;
+				if (msaa > 10) msaa = 1;
+				printf("MSAA: %d\n", msaa);
+				global.msaa = msaa;
+				window_resize_callback(global.window, global.window_width, global.window_height);
+			}
+
 			send_camera_to_shader(color_shader);
 
 			float x = sin(t);
-			float c = cos(t * 0.2);
-			auto& a_t = entity_list.transform_c[a.pos];
-			a_t.position.x = x;
-			a_t.position.y = 0;
-			a_t.rotation = x;
-			entity_list.sprite_c[a.pos].layer = x;
-			entity_list.transform_c[b.pos].scale.y = c;
-			update_systems(entity_list, delta);
+			float c = cos(t * 0.20);
+			float s = sin(t * 0.75);
+
+			draw_text(color_shader, droid_sans, text_mesh, {0, 0}, {1, 1}, -main_camera.rotation, Vec4(c, s, x, 1));
+
+			draw_sprite(color_shader, mario, 0, Vec2(x, 0));
+			draw_sprite(color_shader, mario, 0, Vec2(0, c), Vec2(1, c), c, Vec4(1.0f, 0.5f, 1.0f, 1.0f), s);
 		}
 		
 		// Post processing.
@@ -290,6 +275,9 @@ void game_main() {
 		glUniform1i(screen_location, 0);
 
 		glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), t);
+		glUniform2f(glGetUniformLocation(post_process_shader.program, "sample_size"), 
+				1.0f / global.sample_width, 1.0f / global.sample_height);
+		glUniform1i(glGetUniformLocation(post_process_shader.program, "msaa"), global.msaa);
 
 		draw_mesh(quad_mesh);
 #endif

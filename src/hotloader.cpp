@@ -103,6 +103,10 @@ void register_hotloadable_asset(HotLoader& loader, Shader* _asset, String path, 
 	register_asset(loader, asset);
 }
 
+Shader::Shader(String path, String name) {
+	register_hotloadable_asset(hot_loader, this, path, name);
+}
+
 
 void register_hotloadable_asset(HotLoader& loader, 
 		Texture* _asset, String path, 
@@ -120,6 +124,10 @@ void register_hotloadable_asset(HotLoader& loader,
 	*_asset = new_texture(path, linear_filtering, sprites_x, sprites_y, use_mipmaps);
 
 	register_asset(loader, asset);
+}
+
+Texture::Texture(String path, int sx, int sy) {
+	register_hotloadable_asset(hot_loader, this, path, true, sx, sy, false);
 }
 
 void register_hotloadable_asset(HotLoader& loader, InputMap* map, String path) {
@@ -146,4 +154,6 @@ void register_hotloadable_asset(HotLoader& loader, Sound* s, String path) {
 	register_asset(loader, asset);
 }
 
-#undef TIME
+Sound::Sound(String path) {
+	register_hotloadable_asset(hot_loader, this, path);
+}

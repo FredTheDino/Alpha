@@ -1,3 +1,17 @@
+
+EntityID add_entity(EntityList& list, Entity e) {
+	
+}
+
+EntityID add_entity(EntityList& list, String name, Entity e) {
+	e.named = true;
+	EntityID id = add_entity(list, e);
+	list.name_to_id[name] = id;
+	return id;
+}
+
+
+/*
 // Entity systems the easy way.
 #include "entity.h"
 
@@ -175,3 +189,5 @@ void update_systems(EntityList& list, float delta) {
 //
 // This would require 0 OOP, and it gives me wet dreams 
 // system architecture wise.
+
+// */

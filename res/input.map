@@ -13,6 +13,8 @@ zoom_in J R2
 zoom_out K q
 zoom_out J L2
 
+toggle_aa K p
+
 sound K h
 sound J CROSS 0
 sound J SQUARE 1

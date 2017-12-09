@@ -336,7 +336,7 @@ void send_camera_to_shader(Shader s, Camera c = main_camera) {
 
 void draw_sprite(Shader s, const Texture& texture, int sub_sprite, 
 		Vec2 position, Vec2 scale = {1, 1}, float rotation = 0, 
-		Vec4 color_hint = {1, 1, 1, 1}, float layer = 0) {
+		Vec4 color_hint = {1, 1, 1, 1}, float layer = 0.0f) {
 	GLint sprite_loc =         GET_LOC("sprite");
 	GLint sub_sprite_dim_loc = GET_LOC("sub_sprite_dim");
 	GLint sub_sprite_loc =     GET_LOC("sub_sprite");
@@ -358,10 +358,167 @@ void draw_sprite(Shader s, const Texture& texture, int sub_sprite,
 	glUniform2f(pos_loc, position.x, position.y);
 	glUniform2f(scale_loc, scale.x, scale.y);
 	glUniform1f(rot_loc, rotation);
-	glUniform3f(color_hint_loc, color_hint.x, color_hint.y, color_hint.z);
+	glUniform4f(color_hint_loc, color_hint.x, color_hint.y, color_hint.z, color_hint.w);
 
 	draw_mesh(quad_mesh);
 }
 
-#undef GET_LOC
+//
+// FONT STUFF!
+//
 
+
+void split(String text, Array<String>& s, char c = ' ') {
+	int word_start = -1;
+	int word_end = -1;
+
+	for (int i = 0; i <= text.size(); i++) {
+		if (text[i] == c || text[i] == '\n' || i == text.size()) {
+			word_end = i;
+			if (word_start == -1) continue;
+
+			s.push_back(text.substr(word_start, word_end - word_start));
+			word_start = -1;
+		} else {
+			if (word_start == -1)
+				word_start = i;
+		}
+	}
+}
+
+inline Array<String> split(String text, char c = ' ') {
+	Array<String> s;
+	split(text, s, c);
+	return s;
+}
+
+Font load_font_from_files(String path) {
+	Font font;
+	font.texture = new_texture(path);
+	if (font.texture.texture_id == -1) {
+		printf("Failed to load font image \"%s\", no file found.\n", path.c_str());
+		return font;
+	}
+	
+	FILE* file = fopen((path + ".fnt").c_str(), "r");
+	if (!file) {
+		printf("Failed to load font meta data \"%s\".fnt, no file found.\n", path.c_str());
+		return font;
+	}
+
+	Vec2 pixel_to_uv(
+			1.0f / font.texture.w, 
+			1.0f / font.texture.h);
+	
+	Array<String> split_line;
+	size_t line_size;
+	char* line;
+	while (!feof(file)) {
+		// Reading lines!
+		line_size = 0;
+		line = nullptr;
+		getline(&line, &line_size, file);
+		split(String(line), split_line);
+
+		if (split_line[0] == "char") {
+			Face face;
+			// Parse all the data and store it in a struct
+			face.id = stoi(split(split_line[1], '=')[1]);
+			face.u  = stoi(split(split_line[2], '=')[1]) * pixel_to_uv.x;
+			face.v  = stoi(split(split_line[3], '=')[1]) * pixel_to_uv.y;
+			face.w  = stoi(split(split_line[4], '=')[1]) * pixel_to_uv.x;
+			face.h  = stoi(split(split_line[5], '=')[1]) * pixel_to_uv.y;
+
+			face.offset_x  = stoi(split(split_line[6], '=')[1]) * pixel_to_uv.y;
+			face.offset_y  = stoi(split(split_line[7], '=')[1]) * pixel_to_uv.y;
+			face.advance   = stoi(split(split_line[8], '=')[1]) * pixel_to_uv.y;
+
+			// Save the struct
+			font.faces[face.id] = face;
+			// Find the limits
+			if (face.v != 0) {
+				font.min_height = fmin(font.min_height, face.v) * pixel_to_uv.x;
+				font.max_height = fmax(font.max_height, face.v + face.h) * pixel_to_uv.x;
+			}
+		}
+		free(line);
+		split_line.clear();
+	}
+
+	return font;
+}
+
+void draw_text(const Shader s, const Font& f, const Mesh m, 
+		Vec2 position = {0, 0}, Vec2 scale = {1, 1}, 
+		float rotation = 0.0f, Vec4 color_hint = {1, 1, 1, 1}, 
+		float layer = 0.0f) {
+	GLint draw_mode  = GET_LOC("draw_mode");
+	glUniform1i(draw_mode, 1); // We're drawing text.
+	GLint sprite_loc = GET_LOC("sprite");
+	bind_texture(f.texture, 0);
+	glUniform1i(sprite_loc, 0);
+
+	GLint layer_loc  = GET_LOC("layer");
+	glUniform1f(layer_loc, layer);
+	GLint pos_loc    = GET_LOC("position");
+	glUniform2f(pos_loc, position.x, position.y);
+	GLint rot_loc    = GET_LOC("rotation");
+	glUniform1f(rot_loc, rotation);
+	GLint scale_loc  = GET_LOC("scale");
+	glUniform2f(scale_loc, scale.x, scale.y);
+	GLint color_hint_loc = GET_LOC("color_hint");
+	glUniform4f(color_hint_loc, color_hint.x, color_hint.y, color_hint.z, color_hint.w);
+
+	draw_mesh(m);
+
+	glUniform1i(draw_mode, 0); // Reset.
+}
+
+float length_of_text(const Font& f, const String text, 
+		float size = 1.0f, float spacing = 1.0f) {
+	float total = 0.0f;
+	for (char c : text) {
+		Face face = f.faces.at(c);
+		total += (face.advance + face.offset_x) * size * spacing;
+	}
+
+	return total;
+}
+
+Mesh new_text_mesh(const Font& f, const String text, 
+		float size = 1.0f, float spacing = 1.0f) {
+	Array<Vertex> verticies;
+	verticies.reserve(text.size() * 6);
+
+	float cursor_pos = length_of_text(f, text, size, spacing) / 2;
+	float base_line = f.max_height * size;
+	
+	for (char c : text) {
+		Face face = f.faces.at(c);
+
+		if (face.w != 0.0f) {
+			float bx   = cursor_pos + face.offset_x * size;
+			float bx_n = bx + face.w * size;
+
+			float by   = base_line - face.offset_y * size;
+			float by_n = by - face.h * size;
+
+			float u    = face.u;
+			float u_n  = u + face.w;
+
+			float v    = face.v;
+			float v_n  = v + face.h;
+
+			verticies.push_back(Vertex(bx  , by_n, u  , v_n));
+			verticies.push_back(Vertex(bx  , by  , u  , v));
+			verticies.push_back(Vertex(bx_n, by_n, u_n, v_n));
+			verticies.push_back(Vertex(bx  , by  , u  , v));
+			verticies.push_back(Vertex(bx_n, by  , u_n, v));
+			verticies.push_back(Vertex(bx_n, by_n, u_n, v_n));
+		}
+
+		cursor_pos += (face.advance + face.offset_x) * size * spacing;
+	};
+
+	return new_mesh(verticies);
+}

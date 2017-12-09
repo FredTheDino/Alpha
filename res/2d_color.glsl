@@ -9,6 +9,8 @@ uniform vec2  cam_pos;
 uniform float cam_rot;
 uniform float cam_zoom;
 
+uniform int draw_mode;
+
 uniform sampler2D sprite;
 uniform int sub_sprite;
 uniform ivec2 sub_sprite_dim;
@@ -18,7 +20,7 @@ uniform vec2  position;
 uniform vec2  scale;
 uniform float rotation;
 
-uniform vec3 color_hint;
+uniform vec4 color_hint;
 
 #define VERT 1
 #ifdef VERT
@@ -39,7 +41,7 @@ vec2 rotate(vec2 point, float angle) {
 
 }
 
-void main() {
+void vertex_sprite() {
 	vec2 world_position = rotate(vert_position * scale, rotation) + position;
 	vec2 projected = vec2(world_position + cam_pos);
 
@@ -61,6 +63,28 @@ void main() {
 	}
 }
 
+void vertex_text() {
+	vec2 world_position = rotate(vert_position * scale, rotation) + position;
+	vec2 projected = vec2(world_position + cam_pos);
+
+	projected = rotate(projected, cam_rot);
+
+	projected.x /= aspect;
+
+	gl_Position = vec4(projected / cam_zoom, layer, 1);
+	
+	fragUV.x = vert_uv.x;
+	fragUV.y = vert_uv.y;
+}
+
+void main() {
+	if (draw_mode == 0) {
+		vertex_sprite();
+	} else {
+		vertex_text();
+	}
+}
+
 #else
 //
 // Fragment Shader
@@ -70,15 +94,34 @@ in vec2 fragUV;
 
 out vec4 color;
 
-void main() {
+void fragment_sprite() {
 	vec4 texel = texture2D(sprite, fragUV);
 
 	if (texel.w < 0.1) {
 		discard;
 	}
 
-	color = texel * vec4(color_hint, 1);
+	color = texel * vec4(color_hint.xyz, 1);
 	color.w = texel.w;
+}
+
+void fragment_text() {
+	float min_edge = 0.25f;
+	float max_edge = 0.75f;
+	float dist = texture(sprite, fragUV).w;
+	float alpha = smoothstep(min_edge, max_edge, dist);
+	if (alpha < min_edge) {
+		discard;
+	}
+	color = color_hint;
+}
+
+void main() {
+	if (draw_mode == 0) {
+		fragment_sprite();
+	} else {
+		fragment_text();
+	}
 }
 
 #endif

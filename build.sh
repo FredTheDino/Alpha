@@ -24,13 +24,13 @@ if [ $? -ne 0 ]; then
 	exit;
 fi
 
-if [[ $1 = "debug" ]]; then
+if [ "$1" = "debug" ] || [ "$1" = "d" ] ; then
 	echo ""
 	echo "---------- DEBUG ---------"
 	gdb ./bin/GAME -x run
-elif [[ $1 = "build" ]]; then
+elif [ "$1" = "build" ] || [ "$1" = "b" ] ; then
 	echo ""
-elif [[ 1 = 1 ]]; then
+elif [ 1 -eq 1 ] ; then
 	echo ""
 	echo "---------- RUN ---------"
 	./bin/GAME

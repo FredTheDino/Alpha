@@ -1,3 +1,39 @@
+
+enum EntityType {
+	NONE,
+
+};
+
+struct EntityID {
+	int pos;
+	int uid;
+};
+
+struct Entity {
+	Entity(EntityType type, void* data, void (update*)(Entity*, float), void (draw*)(Entity*)) {
+		this->type = type;
+		this->data = data;
+		this->update = update;
+		this->draw = draw;
+	}
+
+	// Meta
+	int uid;
+	bool named = false;
+
+	EntityType type = NONE;
+		
+	void* data;
+	void (update*)(Entity*, float);
+	void (draw*)(Entity*, float);
+};
+
+struct EntityList {
+	HashMap<String, EntityID> name_to_id;
+	Array<Entity> entities;
+} entity_list;
+
+/*
 #define MAX_NUM_ENTITIES 128
 struct EntityID {
 	short pos;
@@ -54,4 +90,4 @@ struct EntityList {
 } entity_list;
 
 
-
+// */
