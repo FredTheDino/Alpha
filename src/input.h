@@ -24,7 +24,7 @@ struct InputAction {
 };
 
 enum CONTROLLER_TYPE {
-	NONE,
+	NO_CONTROLLER,
 	UNKNOWN,
 	DS3,
 	DS4,
@@ -68,7 +68,7 @@ enum CONTROLLER_BUTTONS {
 };
 
 struct Controller {
-	CONTROLLER_TYPE type = CONTROLLER_TYPE::NONE;
+	CONTROLLER_TYPE type = CONTROLLER_TYPE::NO_CONTROLLER;
 
 	struct {
 		float left_up    = 0;

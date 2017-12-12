@@ -321,7 +321,7 @@ void bind_texture(Texture const & t, int texture_slot) {
 // multiple shaders.
 //
 
-#define GET_LOC(name) glGetUniformLocation(s.program, name);
+#define GET_LOC(name) glGetUniformLocation(s.program, name)
 void send_camera_to_shader(Shader s, Camera c = main_camera) {
 	GLint aspect   = GET_LOC("aspect");
 	GLint cam_pos  = GET_LOC("cam_pos");
@@ -337,28 +337,18 @@ void send_camera_to_shader(Shader s, Camera c = main_camera) {
 void draw_sprite(Shader s, const Texture& texture, int sub_sprite, 
 		Vec2 position, Vec2 scale = {1, 1}, float rotation = 0, 
 		Vec4 color_hint = {1, 1, 1, 1}, float layer = 0.0f) {
-	GLint sprite_loc =         GET_LOC("sprite");
-	GLint sub_sprite_dim_loc = GET_LOC("sub_sprite_dim");
-	GLint sub_sprite_loc =     GET_LOC("sub_sprite");
-	GLint layer_loc =          GET_LOC("layer");
-
-	GLint pos_loc =   GET_LOC("position");
-	GLint scale_loc = GET_LOC("scale");
-	GLint rot_loc =   GET_LOC("rotation");
-
-	GLint color_hint_loc = GET_LOC("color_hint");
 
 	bind_texture(texture, 0);
-	glUniform1i(sprite_loc, 0);
-	glUniform2i(sub_sprite_dim_loc, texture.sprites_x, texture.sprites_y);
-	glUniform1i(sub_sprite_loc, sub_sprite);
+	glUniform1i(GET_LOC("sprite"), 0);
+	glUniform2i(GET_LOC("sub_sprite_dim"), texture.sprites_x, texture.sprites_y);
+	glUniform1i(GET_LOC("sub_sprite"), sub_sprite);
 
-	glUniform1f(layer_loc, layer);
+	glUniform1f(GET_LOC("layer"), layer);
+	glUniform4f(GET_LOC("color_hint"), color_hint.x, color_hint.y, color_hint.z, color_hint.w);
 
-	glUniform2f(pos_loc, position.x, position.y);
-	glUniform2f(scale_loc, scale.x, scale.y);
-	glUniform1f(rot_loc, rotation);
-	glUniform4f(color_hint_loc, color_hint.x, color_hint.y, color_hint.z, color_hint.w);
+	glUniform2f(GET_LOC("position"), position.x, position.y);
+	glUniform2f(GET_LOC("scale"), scale.x, scale.y);
+	glUniform1f(GET_LOC("rotation"), rotation);
 
 	draw_mesh(quad_mesh);
 }
@@ -448,30 +438,28 @@ Font load_font_from_files(String path) {
 	return font;
 }
 
+#define SPRITE_MODE 0
+#define FONT_MODE 1
+
 void draw_text(const Shader s, const Font& f, const Mesh m, 
 		Vec2 position = {0, 0}, Vec2 scale = {1, 1}, 
 		float rotation = 0.0f, Vec4 color_hint = {1, 1, 1, 1}, 
 		float layer = 0.0f) {
 	GLint draw_mode  = GET_LOC("draw_mode");
-	glUniform1i(draw_mode, 1); // We're drawing text.
-	GLint sprite_loc = GET_LOC("sprite");
-	bind_texture(f.texture, 0);
-	glUniform1i(sprite_loc, 0);
+	glUniform1i(draw_mode, FONT_MODE); // We're drawing text.
 
-	GLint layer_loc  = GET_LOC("layer");
-	glUniform1f(layer_loc, layer);
-	GLint pos_loc    = GET_LOC("position");
-	glUniform2f(pos_loc, position.x, position.y);
-	GLint rot_loc    = GET_LOC("rotation");
-	glUniform1f(rot_loc, rotation);
-	GLint scale_loc  = GET_LOC("scale");
-	glUniform2f(scale_loc, scale.x, scale.y);
-	GLint color_hint_loc = GET_LOC("color_hint");
-	glUniform4f(color_hint_loc, color_hint.x, color_hint.y, color_hint.z, color_hint.w);
+	bind_texture(f.texture, 0);
+	glUniform1i(GET_LOC("sprite"), 0);
+
+	glUniform1f(GET_LOC("layer"), layer);
+	glUniform2f(GET_LOC("position"), position.x, position.y);
+	glUniform1f(GET_LOC("rotation"), rotation);
+	glUniform2f(GET_LOC("scale"), scale.x, scale.y);
+	glUniform4f(GET_LOC("color_hint"), color_hint.x, color_hint.y, color_hint.z, color_hint.w);
 
 	draw_mesh(m);
 
-	glUniform1i(draw_mode, 0); // Reset.
+	glUniform1i(draw_mode, SPRITE_MODE); // Reset.
 }
 
 float length_of_text(const Font& f, const String text, 

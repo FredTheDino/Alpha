@@ -9,6 +9,9 @@ hopefully it will be my first shipped game.
 - Entities are now just a bunch of pointers, an update and a draw.
 - Collisions (A way to bind a body to a sprite)
 
+#### Bugs
+- The sprite\_entity\_draw() doesn't work, it doesn't seem to care about the state of se.s.sub\_sprite...
+
 #### Not So Relevent
 - Instant GUI mode.
 - Maybe a file format for drawing animated sprites. With animations and sprite specifications. 
@@ -16,4 +19,4 @@ hopefully it will be my first shipped game.
 
 
 ### Game Idea
-A game about lonelyness. 
+Pollux-B but with water! :D

@@ -22,6 +22,9 @@ uniform float rotation;
 
 uniform vec4 color_hint;
 
+#define SPRITE_MODE 0
+#define FONT_MODE 1
+
 #define VERT 1
 #ifdef VERT
 //
@@ -52,11 +55,11 @@ void vertex_sprite() {
 	gl_Position = vec4(projected / cam_zoom, layer, 1);
 
 	// Assumes a unit square in the coordinates.
-	if (sub_sprite_dim.x <= 1 && sub_sprite_dim.y <= 1) {
+	if (sub_sprite_dim.x == 1 && sub_sprite_dim.y == 1) {
 		fragUV = vert_uv;
 	} else {
 		int x_uv = sub_sprite % sub_sprite_dim.x;
-		int y_uv = (sub_sprite - x_uv) / sub_sprite_dim.y;
+		int y_uv = (sub_sprite - x_uv) / (sub_sprite_dim.x);
 
 		fragUV.x = (vert_uv.x + float(x_uv)) / float(sub_sprite_dim.x);
 		fragUV.y = (vert_uv.y + float(y_uv)) / float(sub_sprite_dim.y);
@@ -78,7 +81,7 @@ void vertex_text() {
 }
 
 void main() {
-	if (draw_mode == 0) {
+	if (draw_mode == SPRITE_MODE) {
 		vertex_sprite();
 	} else {
 		vertex_text();
@@ -117,7 +120,7 @@ void fragment_text() {
 }
 
 void main() {
-	if (draw_mode == 0) {
+	if (draw_mode == SPRITE_MODE) {
 		fragment_sprite();
 	} else {
 		fragment_text();

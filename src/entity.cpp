@@ -1,193 +1,205 @@
 
+//
+// Entity System
+//
+
 EntityID add_entity(EntityList& list, Entity e) {
-	
+	EntityID id = {};
+	// Set some meta info
+	e.alive   = true;
+	e.cleared = false;
+
+	if (list.next_free == -1) {
+		// Add a new one
+		id.pos = list.entities.size();
+		list.entities.push_back(e);
+	} else {
+		// Use an old one
+		id.pos = list.next_free;
+		// Update the next free.
+		list.next_free = -list.entities[id.pos].uid;
+	}
+
+	id.uid = list.uid_gen++;
+
+	e.pos = id.pos;
+	e.uid = id.uid;
+
+	entity_list.entities[id.pos] = Entity(e);
+
+	return id;
 }
 
-EntityID add_entity(EntityList& list, String name, Entity e) {
-	e.named = true;
-	EntityID id = add_entity(list, e);
+EntityID add_entity(EntityList& list, String name, Entity e, bool replace = true) {
+	EntityID id;
+	id.pos = -1;
+	id.uid = -1;
+
+	if (!replace) {
+		EntityID id = list.name_to_id[name];
+		const Entity e = list.entities[id.pos];
+		if (!e.alive || !e.cleared) 
+			return id;
+	}
+
+	e.name = name;
+	id = add_entity(list, e);
 	list.name_to_id[name] = id;
 	return id;
 }
 
+Entity* find_entity(EntityList& list, EntityID id) {
+	if (id.pos < 0) 
+		return nullptr;
+	if (list.entities.size() < id.pos) 
+		return nullptr;
 
-/*
-// Entity systems the easy way.
-#include "entity.h"
+	const Entity& e = list.entities[id.pos];
+	if (e.uid != id.uid)
+		return nullptr;
 
-#define CHECK_IF_ALIVE(a) if (!isAlive(list, id)) {printf("Trying to access dead entity %d:(%d)\n", id.pos, id.uid); return(a);}
+	if (e.alive)
+		return &list.entities[id.pos];
 
-bool inline isAlive(const EntityList& list, const EntityID id) {
-	return list.uid[id.pos] == id.uid;
+	return nullptr;
 }
 
-EntityID create_entity(EntityList& list) {
-	EntityID id = {};
-	if (list.next_free >= 0) {
-		// No holes, so append.
-		id.pos = list.next_free++;
-	} else {
-		id.pos = -list.next_free; // Make posetive.
-		list.next_free = -list.uid[id.pos];
+Entity* find_entity(EntityList& list, String name) {
+	try {
+		return find_entity(list, list.name_to_id[name]);
+	} catch (std::out_of_range) {
+		return nullptr;
 	}
-
-	if (list.max_entity_pos < id.pos) {
-		list.max_entity_pos = id.pos; // This is the one that is furthest along.
-	}
-
-	id.uid = ++list.curr_uid;
-	list.uid[id.pos] = id.uid;
-	// printf("pos: %d, uid: %d\n", id.pos, id.uid);
-	return id;
 }
 
+bool remove_entity(EntityList& list, EntityID id) {
+	Entity* e = find_entity(list, id);
+	if (e == nullptr)
+		return false;
 
-void remove_entity(EntityList& list, EntityID id) {
-	CHECK_IF_ALIVE(void());
-	// if (!isAlive(list, id)) return; // Can't kill it twice!
-	// printf("deleted pos: %d, uid: %d\n", id.pos, id.uid);
+	e->alive = false;
+	e->uid   = -id.uid;
+	list.dead.push_back(id.pos);
 
-	// Remove it.
-	list.uid[id.pos] = list.next_free;
-	list.next_free = -id.pos;
+	if (e->name != "")
+		list.name_to_id.erase(e->name);
 
-	for (int i = 0; i < NUM_COMPONENT_TYPES; i++) {
-		list.comp[id.pos][i] = 0;
+	return true;
+}
+
+bool remove_entity(EntityList& list, String name) {
+	return remove_entity(list, list.name_to_id[name]);
+}
+
+void update_entities(EntityList& list, float delta) {
+	for (int i = 0; i < list.entities.size(); i++) {
+		Entity& e = list.entities[i];
+		if (!e.alive) continue;
+		if (!e.update) continue;
+		e.update(&e, delta);
 	}
+}
 
-	for (int i = 0; i < NUM_SYSTEM_TYPES; i++) {
-		list.system[id.pos][i] = 0;
+void draw_entities(EntityList& list) {
+	for (int i = 0; i < list.entities.size(); i++) {
+		Entity& e = list.entities[i];
+		if (!e.alive) continue;
+		if (!e.draw) continue;
+		e.draw(&e);
 	}
-	
-	// Check if it is the end one that is deleted
-	if (id.pos == list.max_entity_pos) {
-		// If it is, see if we can find the next max one.
-		while (0 <= list.max_entity_pos && 0 < id.uid) {
-			list.max_entity_pos--;
+}
+
+void gc_entities(EntityList& list) {
+	if (list.dead.size() != 0) {
+		for (int i = 0; i < list.dead.size(); i++) {
+			int pos = list.dead[i];
+			Entity& e = list.entities[pos];
+			if (e.clear)
+
+				e.clear(&e);
+			e.cleared = true;
+			e.uid = -list.next_free;
+			list.next_free = pos;
 		}
+		list.dead.clear();
+	}
+} 
+
+EntityList::~EntityList() {
+	for (int i = 0; i < entities.size(); i++) {
+		Entity& e = entities[i];
+		if (!e.cleared && e.clear)
+			e.clear(&e);
 	}
 }
 
-inline void add_component(EntityList& list, EntityID id, ComponentType type) {
-	CHECK_IF_ALIVE(void());
-	list.comp[id.pos][type] = true;
-}
+//
+// Entity Creation
+//
 
-inline void remove_component(EntityList& list, EntityID id, ComponentType type) {
-	CHECK_IF_ALIVE(void());
-	list.comp[id.pos][type] = false;
-}
-
-inline void set_component(EntityList& list, EntityID id, ComponentType type, bool value) {
-	CHECK_IF_ALIVE(void());
-	list.comp[id.pos][type] = value;
-}
-
-inline void add_system(EntityList& list, EntityID id, SystemType type) {
-	CHECK_IF_ALIVE(void());
-	list.system[id.pos][type] = true;
-}
-
-inline void remove_system(EntityList& list, EntityID id, SystemType type) {
-	CHECK_IF_ALIVE(void());
-	list.system[id.pos][type] = false;
-}
-
-inline void set_system(EntityList& list, EntityID id, SystemType type, bool value) {
-	CHECK_IF_ALIVE(void());
-	list.system[id.pos][type] = value;
-}
-
-void* get_component(EntityList& list, EntityID id, ComponentType type) {
-	CHECK_IF_ALIVE(nullptr);
-	switch (type) {
-		case TRANSFORM_COMPONENT:
-			return &list.transform_c[id.pos];
-		case BODY_COMPONENT:
-			return &list.body_c[id.pos];
-		case SPRITE_COMPONENT:
-			return &list.sprite_c[id.pos];
-		case NUM_COMPONENT_TYPES:
-		default:
-			return nullptr;
-	}
-}
-
-inline EntityList::Transform* get_transform(EntityList& list, EntityID id) {
-	CHECK_IF_ALIVE(nullptr);
-	return &list.transform_c[id.pos];
-}
-
-inline EntityList::Body* get_body(EntityList& list, EntityID id) {
-	CHECK_IF_ALIVE(nullptr);
-	return &list.body_c[id.pos];
-}
-
-inline EntityList::Sprite* get_sprite(EntityList& list, EntityID id) {
-	CHECK_IF_ALIVE(nullptr);
-	return &list.sprite_c[id.pos];
-}
-
-void inline fall_system(EntityList& list, float delta, int i) {
-	if (list.comp[i][TRANSFORM_COMPONENT] && list.comp[i][BODY_COMPONENT]) {
-		// Fall system
-		list.body_c[i].velocity = list.body_c[i].velocity + Vec2(0, delta);
-		list.transform_c[i].position = list.transform_c[i].position + (list.body_c[i].velocity * delta);
-	}
-}
-
-void inline simple_sprite_system(EntityList& list, float delta, int i) {
-	if (list.comp[i][SPRITE_COMPONENT] && list.comp[i][TRANSFORM_COMPONENT]) {
-		draw_sprite(*list.color_shader, 
-				list.sprite_c[i].sprite, list.sprite_c[i].sub_sprite, 
-				list.transform_c[i].position,
-				list.transform_c[i].scale, 
-				list.transform_c[i].rotation, 
-				Vec4(1, 1, 1, 1),
-				list.sprite_c[i].layer);
-	}
-}
-
-void update_systems(EntityList& list, float delta) {
-	for (int i = 0; i <= list.max_entity_pos; i++) {
-		if (list.uid[i] < 0) continue;
-		if (list.system[i][FALL_SYSTEM]) {
-			fall_system(list, delta, i);
-		}
-
-		if (list.system[i][SIMPLE_SPRITE_SYSTEM]) {
-			simple_sprite_system(list, delta, i);
-		}
-	}
+struct Sprite {
+	Shader* shader;
+	Texture* texture;
+	float layer;
+	int sub_sprite;
 };
 
-// // Assume the global list if none is specified.
-// inline void add_component(EntityID id, ComponentType type) {
-// 	entity_list.comp[id.pos][type] = true;
-// }
-// 
-// EntityID inline create_entity() {
-// 	return create_entity(entity_list);
-// }
-// 
-// void inline remove_entity(EntityID id) {
-// 	remove_entity(entity_list, id);
-// }
-// 
-// inline EntityList::Transform& get_transform(EntityID id) {
-// 	return entity_list.transform_c[id.pos];
-// }
+struct SpriteEntity {
+	Sprite s;
+	Transform t;
+	float timer = 0.0f;
+};
 
-// Systems need to get updated when an entity is removed.
-// Or just checked when they're updated. I could have a 
-// list in the entity list with entities that have been
-// removed this frame, and check that against the systems.
-// 
-// But systems need to be implemented in their unique way.
-// And components could exist only in systems. Making them
-// only into a struct and making the system to interface.
-//
-// This would require 0 OOP, and it gives me wet dreams 
-// system architecture wise.
 
-// */
+Entity new_sprite_entity(Vec2 position, Vec2 scale, float rotation, 
+		Shader* shader, Texture* texture, int sub_sprite = 0, float layer = 0.0f) {
+	SpriteEntity* se = new SpriteEntity();
+	se->s.shader = shader;
+	se->s.texture = texture;
+	se->s.sub_sprite = sub_sprite;
+	se->s.layer = sub_sprite;
+
+	se->t.position = position;
+	se->t.scale = scale;
+	se->t.rotation = rotation;
+
+	Entity e;
+	e.data = se;
+	e.type = SPRITE_ENTITY;
+
+	e.update = [](Entity* e, float delta) {
+		SpriteEntity& se = *(SpriteEntity*) e->data;
+		se.timer += delta;
+		if (se.timer > 1.0f) {
+			se.timer -= 1.0f;
+			se.s.sub_sprite += 1;
+			se.s.sub_sprite %= 6;
+			printf("%d\n", se.s.sub_sprite);
+		}
+
+		se.t.rotation += delta;
+	};
+
+	e.draw   = [](Entity* e) {
+		SpriteEntity& se = *((SpriteEntity*) e->data);
+
+		draw_sprite(*se.s.shader, *se.s.texture, 
+				se.s.sub_sprite, se.t.position, 
+				se.t.scale, se.t.rotation, 
+				{1, 1, 1, 1}, se.s.layer);
+	};
+
+	e.clear  = [](Entity* e) {
+		delete (SpriteEntity*) e->data;
+	};
+
+	return e;
+}
+
+
+
+
+
+
+
+

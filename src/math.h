@@ -88,9 +88,18 @@ struct Vec2 {
 	Vec2 operator/ (const float scale) {
 		return Vec2(x / scale, y / scale);
 	}
-
 };
+
+Vec2 normalize(Vec2 v) {
+	return v / (v.x * v.x + v.y * v.y);
+}
 
 float dot (const Vec2& a, const Vec2& b) {
 	return a.x * b.y + b.x * a.y;
 }
+
+struct Transform {
+	Vec2 position = {};
+	Vec2 scale = {1, 1};
+	float rotation = 0.0f;
+};

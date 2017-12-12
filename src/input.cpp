@@ -106,15 +106,15 @@ void poll_controller_data(InputMap& map) {
 		CONTROLLER_TYPE& type = map.controllers[i].type;
 		int present = glfwJoystickPresent(i);
 		if (!present) {
-			if (type != CONTROLLER_TYPE::NONE) {
+			if (type != CONTROLLER_TYPE::NO_CONTROLLER) {
 				// Disconnect
-				type = CONTROLLER_TYPE::NONE;
+				type = CONTROLLER_TYPE::NO_CONTROLLER;
 				printf("Controller %d disconnected.\n", i);
 			}
 			continue;
 		}
 
-		if (present && type == CONTROLLER_TYPE::NONE) {
+		if (present && type == CONTROLLER_TYPE::NO_CONTROLLER) {
 			// Connect
 			printf("Connected controller %d as a ", i);
 			String name = glfwGetJoystickName(i);
@@ -135,7 +135,7 @@ void poll_controller_data(InputMap& map) {
 			case CONTROLLER_TYPE::XBONE:
 				handle_xbone(i, c);
 				break;
-			case CONTROLLER_TYPE::NONE:
+			case CONTROLLER_TYPE::NO_CONTROLLER:
 			case CONTROLLER_TYPE::UNKNOWN:
 				break;
 			default:
@@ -173,7 +173,7 @@ void update_input(InputMap& map = input_map) {
 			// Loop through all.
 			if (action.controller == -1) {
 				for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
-					if (map.controllers[i].type == NONE) {
+					if (map.controllers[i].type == NO_CONTROLLER) {
 						break;
 					}
 					float current = map.controllers[i][action.input];
@@ -185,7 +185,7 @@ void update_input(InputMap& map = input_map) {
 			} else {
 				int counter = -1;
 				for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
-					if (map.controllers[i].type == NONE) {
+					if (map.controllers[i].type == NO_CONTROLLER) {
 						break;
 					}
 					if (map.controllers[i].type == UNKNOWN) {
