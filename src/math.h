@@ -95,7 +95,7 @@ Vec2 normalize(Vec2 v) {
 }
 
 float dot (const Vec2& a, const Vec2& b) {
-	return a.x * b.y + b.x * a.y;
+	return a.x * b.x + b.y * a.y;
 }
 
 struct Transform {

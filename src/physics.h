@@ -4,6 +4,8 @@
 // Maybe add shapes to a list and remove all of them at the end, just to make them
 // garbage collected.
 
+struct PhysicsEngine;
+
 struct Shape {
 	Shape(PhysicsEngine& engine, Array<Vec2> points);
 	Shape(PhysicsEngine& engine, Array<Vec2> points, Array<Vec2> normals); 
@@ -31,6 +33,11 @@ struct Body {
 };
 
 struct Bound {
+	Bound(BodyID id, bool is_min_bound) : 
+		id(id), is_min_bound(is_min_bound) {
+
+	};
+
 	BodyID id;
 	bool is_min_bound = false;
 	float value;

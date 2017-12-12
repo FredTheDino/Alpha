@@ -174,7 +174,6 @@ Entity new_sprite_entity(Vec2 position, Vec2 scale, float rotation,
 			se.timer -= 1.0f;
 			se.s.sub_sprite += 1;
 			se.s.sub_sprite %= 6;
-			printf("%d\n", se.s.sub_sprite);
 		}
 
 		se.t.rotation += delta;

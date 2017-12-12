@@ -1,11 +1,11 @@
 // UNTESTED!
 
 Vec2 project_along(Shape* s, Vec2 v) {
-	Vec2 bounds = {FLT_MIN, FLT_MAX};
+	Vec2 bounds = {FLT_MAX, -FLT_MAX};
 	for (auto p : s->points) {
 		float d = dot(p, v);
-		bounds[0] = min(bounds[0], d);
-		bounds[1] = max(bounds[1], d);
+		bounds._[0] = fmin(bounds._[0], d);
+		bounds._[1] = fmax(bounds._[1], d);
 	}
 
 	return bounds;
@@ -78,8 +78,8 @@ BodyID add_body(PhysicsEngine& engine, Body b) {
 	engine.bodies[id.pos] = b;
 
 	{
-		Bound min_bound = {id, true,  b.shape->bounds[0]};
-		Bound max_bound = {id, false, b.shape->bounds[1]};
+		Bound min_bound(id, true);
+		Bound max_bound(id, false);
 
 		engine.bounds.push_back(min_bound);
 		engine.bounds.push_back(max_bound);
@@ -137,8 +137,8 @@ bool remove_body(PhysicsEngine& engine, BodyID id) {
 		}
 	}
 
-	engine.bounds.erase(min_pos);
-	engine.bounds.erase(max_pos);
+	engine.bounds.erase(engine.bounds.begin() + min_pos);
+	engine.bounds.erase(engine.bounds.begin() + max_pos);
 
 	return true;
 }
@@ -149,7 +149,14 @@ bool can_collide(const Body& a, const Body& b) {
 	return true;
 }
 
-void sort_bounds(Array<Bounds>& list) {
+void update_bounds(PhysicsEngine& engine, Array<Bound>& list) {
+	for (auto& b : list) {
+		Body& body = *find_body(engine, b.id);
+
+		b.value = dot(body.transform.position, engine.broad_phase_normal);
+		b.value += body.shape->bounds._[!b.is_min_bound];
+	}
+
 	for (int i = 1; i < list.size(); i++) {
 		for (int j = i; list[j - 1].value > list[j].value && 0 < j; j--) {
 			Bound b = list[j];
@@ -160,25 +167,37 @@ void sort_bounds(Array<Bounds>& list) {
 }
 
 void update_physics_engine(PhysicsEngine& engine, float delta) {
-	sort_bounds(engine.bounds);
+	update_bounds(engine, engine.bounds);
 
 	int num_potential_collisions = 0;
 	int num_collisions = 0;
+	printf("listing bounds:\n");
 	for (int i = 0; i < engine.bounds.size(); i++) {
+		BodyID id_a = engine.bounds[i].id;
+		printf("%d) @%d, v: %f, left:%d\n", i, id_a.pos, 
+				engine.bounds[i].value, engine.bounds[i].is_min_bound);
 		if (!engine.bounds[i].is_min_bound) continue;
 
-		BodyID id_a = engine.bounds[i].id;
 		for (int j = i; j < engine.bounds.size(); j++) {
-			if (!engine.bounds[j].is_min_bound) continue;
 			BodyID id_b = engine.bounds[j].id;
+			if (id_b.pos == id_a.pos) break;
 
-			Body a = find_body(engine, id_a);
-			Body b = find_body(engine, id_b);
+			if (!engine.bounds[j].is_min_bound) continue;
 
-			if (!can_collide(a, b)) continue;
+			num_potential_collisions++;
+
+			Body* a = find_body(engine, id_a);
+			Body* b = find_body(engine, id_b);
+
+			if (!can_collide(*a, *b)) continue;
 			
 			// Do actual collision test here...
+			num_collisions++;
 		}
 	}
+
+	printf("num_pot: %d\n    num: %d\nnum_bodies_squared: %d\n", 
+			num_potential_collisions, num_collisions, 
+			engine.bodies.size() * engine.bodies.size());
 }
 

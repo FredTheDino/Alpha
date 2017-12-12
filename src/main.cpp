@@ -193,6 +193,9 @@ inline void init_engine() {
 void game_main() {
 	init_engine();
 
+	// Disableds buffering...
+	setbuf(stdout, NULL);
+
 	if (0) {
 		printf("Remove the debug code related to entities!\n");
 
@@ -247,7 +250,14 @@ void game_main() {
 	if (1) {
 		printf("Remove the debug code related to physics!\n");
 
-		Shape shape({{-1, -1}, {1, -1}, {1, 1}, {-1, 1}});
+		Array<Vec2> points(4);
+
+		points.push_back(Vec2(-1, -1)); 
+		points.push_back(Vec2( 1, -1)); 
+		points.push_back(Vec2( 1,  1)); 
+		points.push_back(Vec2(-1,  1));
+
+		Shape shape(engine, points);
 		Shape* s = &shape;
 		Body body;
 
@@ -258,17 +268,18 @@ void game_main() {
 	
 
 		BodyID a = add_body(engine, body, s);
-		body.transform.x = 1.5f;
+		body.transform.position.x = 1.5f;
 		BodyID b = add_body(engine, body, s);
-		body.transform.x = 2.5f;
+		body.transform.position.x = 3.5f;
 
-		body.mask = 0;
 		add_body(engine, body, s);
+		body.transform.position.x = -0.5f;
 
-		body.mask = 0b11111111;
-		body.mass = 0;
 		add_body(engine, body, s);
+		body.transform.position.x = -2.5f;
+
 		add_body(engine, body, s);
+		body.transform.position.x = -0.5f;
 
 		update_physics_engine(engine, 0.1);
 	}
