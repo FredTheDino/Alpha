@@ -91,6 +91,19 @@ bool remove_entity(EntityList& list, String name) {
 	return remove_entity(list, list.name_to_id[name]);
 }
 
+void clear(EntityList& list) {
+	for (Entity& e : list.entities) {
+		e.alive = false;
+		if (e.cleared) continue;
+		if (e.clear)
+			e.clear(&e);
+		
+		e.cleared = true;
+		e.uid = -list.next_free;
+		list.next_free = e.pos;
+	}
+}
+
 void update_entities(EntityList& list, float delta) {
 	for (int i = 0; i < list.entities.size(); i++) {
 		Entity& e = list.entities[i];
@@ -100,12 +113,12 @@ void update_entities(EntityList& list, float delta) {
 	}
 }
 
-void draw_entities(EntityList& list) {
+void draw_entities(EntityList& list, float t) {
 	for (int i = 0; i < list.entities.size(); i++) {
 		Entity& e = list.entities[i];
 		if (!e.alive) continue;
 		if (!e.draw) continue;
-		e.draw(&e);
+		e.draw(&e, t);
 	}
 }
 
@@ -114,9 +127,10 @@ void gc_entities(EntityList& list) {
 		for (int i = 0; i < list.dead.size(); i++) {
 			int pos = list.dead[i];
 			Entity& e = list.entities[pos];
-			if (e.clear)
 
+			if (e.clear)
 				e.clear(&e);
+
 			e.cleared = true;
 			e.uid = -list.next_free;
 			list.next_free = pos;
@@ -140,14 +154,13 @@ EntityList::~EntityList() {
 struct Sprite {
 	Shader* shader;
 	Texture* texture;
-	float layer;
-	int sub_sprite;
+	float layer = 0;
+	int sub_sprite = 0;
 };
 
 struct SpriteEntity {
 	Sprite s;
 	Transform t;
-	float timer = 0.0f;
 };
 
 
@@ -167,19 +180,9 @@ Entity new_sprite_entity(Vec2 position, Vec2 scale, float rotation,
 	e.data = se;
 	e.type = SPRITE_ENTITY;
 
-	e.update = [](Entity* e, float delta) {
-		SpriteEntity& se = *(SpriteEntity*) e->data;
-		se.timer += delta;
-		if (se.timer > 1.0f) {
-			se.timer -= 1.0f;
-			se.s.sub_sprite += 1;
-			se.s.sub_sprite %= 6;
-		}
+	e.update = [](Entity* e, float delta) {};
 
-		se.t.rotation += delta;
-	};
-
-	e.draw   = [](Entity* e) {
+	e.draw   = [](Entity* e, float t) {
 		SpriteEntity& se = *((SpriteEntity*) e->data);
 
 		draw_sprite(*se.s.shader, *se.s.texture, 
@@ -195,10 +198,88 @@ Entity new_sprite_entity(Vec2 position, Vec2 scale, float rotation,
 	return e;
 }
 
+struct Player {
+	Sprite s;
+	Vec2 position;
+	BodyID body;
 
+	float speed = 7;
+	float jump_vel = 1;
+};
 
+Entity new_player(Vec2 position, Shape* shape, Shader* shader, Texture* texture) {
+	Player* p = new Player;
+	
+	p->s.shader = shader;
+	p->s.texture = texture;
+	p->position = position;
+	Body body;
+	body.position = position;
+	p->body = add_body(engine, body, shape);
 
+	Entity e;
+	e.data = p;
+	e.type = PLAYER_ENTITY;
 
+	e.update = [](Entity* e, float delta) {
+		Player* p = (Player*) e->data;
+		Body* b = find_body(engine, p->body);
+
+		b->velocity.x += delta * p->speed * (value("right") - value("left"));
+		b->velocity.y += delta * p->speed * (value("up") - value("down"));
+		
+		bool grounded = false;
+		for (auto c : b->collisions) {
+			if (dot(c.selected_normal, Vec2(0, 1)) > 0.75f) {
+				grounded = true;
+				break;
+			}
+		}
+
+		if (grounded && pressed("jump")) {
+			b->velocity.y = p->jump_vel;
+		}
+
+		p->position = b->position;
+	};
+
+	e.draw   = [](Entity* e, float t) {
+		Player* p = (Player*) e->data;
+
+		draw_sprite(*p->s.shader, *p->s.texture, 
+				p->s.sub_sprite, p->position, 
+				{0, 0}, 0, 
+				{1, 1, 1, 1}, p->s.layer);
+	};
+
+	e.clear  = [](Entity* e) {
+		delete (Player*) e->data;
+	};
+
+	return e;
+}
+
+Entity new_body_entity(Vec2 position, float mass, Shape* shape) {
+	Body b;
+	b.position = position;
+	b.mass = mass;
+	BodyID* id = new BodyID(add_body(engine, b, shape));
+
+	Entity e;
+	e.data = id;
+	e.type = BODY_ENTITY;
+
+	e.update = [](Entity* e, float delta) {
+	};
+
+	e.draw   = [](Entity* e, float t) {
+	};
+
+	e.clear  = [](Entity* e) {
+		delete (BodyID*) e->data;
+	};
+	return e;
+}
 
 
 

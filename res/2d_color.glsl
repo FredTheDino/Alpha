@@ -24,6 +24,7 @@ uniform vec4 color_hint;
 
 #define SPRITE_MODE 0
 #define FONT_MODE 1
+#define FILL_MODE 2
 
 #define VERT 1
 #ifdef VERT
@@ -52,7 +53,7 @@ void vertex_sprite() {
 
 	projected.x /= aspect;
 
-	gl_Position = vec4(projected / cam_zoom, layer, 1);
+	gl_Position = vec4(projected / cam_zoom, layer / 100.0, 1);
 
 	// Assumes a unit square in the coordinates.
 	if (sub_sprite_dim.x == 1 && sub_sprite_dim.y == 1) {
@@ -81,10 +82,10 @@ void vertex_text() {
 }
 
 void main() {
-	if (draw_mode == SPRITE_MODE) {
-		vertex_sprite();
-	} else {
+	if (draw_mode == FONT_MODE) {
 		vertex_text();
+	} else {
+		vertex_sprite();
 	}
 }
 
@@ -119,11 +120,18 @@ void fragment_text() {
 	color = color_hint;
 }
 
+void fragment_fill() {
+	color = color_hint;
+}
+
 void main() {
+
 	if (draw_mode == SPRITE_MODE) {
 		fragment_sprite();
-	} else {
+	} else if (draw_mode == FONT_MODE) {
 		fragment_text();
+	} else if (draw_mode == FILL_MODE) {
+		fragment_fill();
 	}
 }
 

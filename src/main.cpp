@@ -38,19 +38,25 @@ typedef std::string String;
 // My stuff.
 #include "globals.h"
 #include "math.h"
+#include "physics.h"
 #include "graphics.h"
 #include "entity.h"
-#include "physics.h"
 
 Mesh quad_mesh;
 
+// Shaders.
+Shader color_shader;
+Shader post_process_shader;
+
 // My very own containers
 //#include "containers.cpp"
+#include "physics.cpp"
 #include "graphics.cpp"
 #include "input.cpp"
 #include "audio.cpp"
 #include "entity.cpp"
-#include "physics.cpp"
+#include "level.h"
+#include "level.cpp"
 
 // Stuff with dependencies.
 #include "hotloader.cpp"
@@ -147,6 +153,7 @@ inline void init_engine() {
 	glfwSetWindowCloseCallback(global.window, window_close_callback);
 	glfwSetWindowSizeCallback(global.window, window_resize_callback);
 	glfwMakeContextCurrent(global.window);	
+	glfwSetInputMode(global.window, GLFW_STICKY_KEYS, 1);
 
 	// @FIXME, we dont allow this to be set ATM, that would probably be smart.
 	glfwSwapInterval(1);
@@ -165,7 +172,7 @@ inline void init_engine() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.9, 0.8, 0.21, 1.0);
+	glClearColor(0.3, 0.8, 0.4, 1.0);
 
 #if POST_PROCESSING
 	init_ppo();
@@ -188,102 +195,25 @@ inline void init_engine() {
 	verticies.push_back(Vertex(-0.5, -0.5, 0, 1));
 
 	quad_mesh = new_mesh(verticies);
+
+	color_shader = Shader("res/2d_color.glsl", "2d_color");
+	post_process_shader = Shader("res/post_process.glsl", "post");
+}
+
+void set_aa(int msaa) {
+	if (msaa < 1) msaa = 1;
+	global.msaa = msaa;
+	window_resize_callback(global.window, global.window_width, global.window_height);
 }
 
 void game_main() {
 	init_engine();
 
-	// Disableds buffering...
+	// Disables text buffering...
 	setbuf(stdout, NULL);
 
-	if (0) {
-		printf("Remove the debug code related to entities!\n");
-
-		EntityID a = add_entity(entity_list, Entity());
-		EntityID b = add_entity(entity_list, Entity());
-
-		printf("a: %d:%d\n", a.pos, a.uid);
-		printf("b: %d:%d\n", b.pos, b.uid);
-
-		remove_entity(entity_list, a);
-
-		a = add_entity(entity_list, Entity());
-
-		update_entities(entity_list, 0.1f);
-
-		printf("a: %d:%d\n", a.pos, a.uid);
-		printf("b: %d:%d\n", b.pos, b.uid);
-
-		EntityID c = add_entity(entity_list, Entity());
-
-		printf("a: %d:%d\n", a.pos, a.uid);
-		printf("b: %d:%d\n", b.pos, b.uid);
-		printf("c: %d:%d\n", c.pos, c.uid);
-
-		remove_entity(entity_list, a);
-		remove_entity(entity_list, b);
-		remove_entity(entity_list, c);
-
-		a = add_entity(entity_list, Entity());
-		b = add_entity(entity_list, Entity());
-		c = add_entity(entity_list, Entity());
-
-		printf("a: %d:%d\n", a.pos, a.uid);
-		printf("b: %d:%d\n", b.pos, b.uid);
-		printf("c: %d:%d\n", c.pos, c.uid);
-
-		update_entities(entity_list, 0.1f);
-
-		remove_entity(entity_list, a);
-		remove_entity(entity_list, b);
-		remove_entity(entity_list, c);
-
-		a = add_entity(entity_list, Entity());
-		b = add_entity(entity_list, Entity());
-		c = add_entity(entity_list, Entity());
-
-		printf("a: %d:%d\n", a.pos, a.uid);
-		printf("b: %d:%d\n", b.pos, b.uid);
-		printf("c: %d:%d\n", c.pos, c.uid);
-	}
-
-	if (1) {
-		printf("Remove the debug code related to physics!\n");
-
-		Array<Vec2> points(4);
-
-		points.push_back(Vec2(-1, -1)); 
-		points.push_back(Vec2( 1, -1)); 
-		points.push_back(Vec2( 1,  1)); 
-		points.push_back(Vec2(-1,  1));
-
-		Shape shape(engine, points);
-		Shape* s = &shape;
-		Body body;
-
-		// 
-		// Test this shit, make sure the broad phase collision test
-		// works as it should and that there are no memory leaks.
-		//
+	Level level = load_level(entity_list, engine, "res/level");
 	
-
-		BodyID a = add_body(engine, body, s);
-		body.transform.position.x = 1.5f;
-		BodyID b = add_body(engine, body, s);
-		body.transform.position.x = 3.5f;
-
-		add_body(engine, body, s);
-		body.transform.position.x = -0.5f;
-
-		add_body(engine, body, s);
-		body.transform.position.x = -2.5f;
-
-		add_body(engine, body, s);
-		body.transform.position.x = -0.5f;
-
-		update_physics_engine(engine, 0.1);
-	}
-
 	// Load stuff
 	Sound ha("res/a.wav");
 
@@ -291,83 +221,58 @@ void game_main() {
 	auto droid_sans = load_font_from_files("res/fonts/droid_sans");
 	auto text_mesh = new_text_mesh(droid_sans, "Hello World");
 
-	Shader color_shader("res/2d_color.glsl", "2d_color");
-	Shader post_process_shader("res/post_process.glsl", "post");
-
-	Texture mario("res/mario", 3, 2);
-
-	EntityID a = add_entity(entity_list, new_sprite_entity({0, 0}, {1, 1}, 0, 
-				&color_shader, &mario, 0, 0.5f));
+	main_camera.zoom = 4;
 
 	float t = 0.0f;
-	float delta = 0.0f;
+	float buffer = 0;
+	float delta = 1.0f / 420.0f;
+	int frame = 0;
 	glfwSetTime(t);
 	while (!global.should_quit) {
 		float new_t = glfwGetTime();
-		delta = new_t - t;
+		buffer += new_t - t;
 		t = new_t;
 
-		glfwPollEvents();
+		while (delta < buffer) {
+			buffer -= delta;
+			frame++;
 
-		update_loader(hot_loader);
+			glfwPollEvents();
 
-		update_input();
+			update_input();
 
-		update_audio();
+			update_loader(hot_loader);
 
-		// Begining of update.
-		update_entities(entity_list, delta);
-		gc_entities(entity_list); // This doesn't need to be run everyframe.
+			update_physics_engine(engine, delta);
 
-		if (is_down("exit")) {
-			global.should_quit = true;
-		}
+			update_audio();
 
-		if (pressed("sound")) {
-			play_sound(ha, SFX);
+			// Begining of update.
+			update_entities(entity_list, delta);
+
+			gc_entities(entity_list); // This doesn't need to be run everyframe.
+
+			if (is_down("exit")) {
+				global.should_quit = true;
+			}
+			if (pressed("reload")) {
+				reload_level(level);
+			}
 		}
 
 #if POST_PROCESSING
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 #endif
 		{
-			{
-				// Setup graphics
-				glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-				use_shader(color_shader);
-				main_camera.position.x += delta * value("right");
-				main_camera.position.x -= delta * value("left");
-				main_camera.position.y += delta * value("up");
-				main_camera.position.y -= delta * value("down");
+			// Setup graphics
+			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+			use_shader(color_shader);
+			send_camera_to_shader(color_shader);
 
-				main_camera.rotation += delta * value("turn");
-
-				main_camera.zoom /= 1 + delta * value("zoom_in");
-				main_camera.zoom *= 1 + delta * value("zoom_out");
-
-				if (pressed("toggle_aa")) {
-					int msaa = global.msaa * 2;
-					if (msaa > 10) msaa = 1;
-					printf("MSAA: %d\n", msaa);
-					global.msaa = msaa;
-					window_resize_callback(global.window, global.window_width, global.window_height);
-				}
-
-				send_camera_to_shader(color_shader);
-			} 
-
-			float x = sin(t);
-			float c = cos(t * 0.20);
-			float s = sin(t * 0.75);
-
-			draw_text(color_shader, droid_sans, text_mesh, {0, 0}, {1, 1}, -main_camera.rotation, Vec4(c, s, x, 1));
-
-			draw_sprite(color_shader, mario, 1, Vec2(x, 0));
-			draw_sprite(color_shader, mario, 0, Vec2(0, c), Vec2(1, c), c, Vec4(1.0f, 0.5f, 1.0f, 1.0f), s);
-
-			draw_entities(entity_list);
+			debug_draw_engine(color_shader, engine);
+			draw_entities(entity_list, frame * delta);
 		}
-		
+
 		// Post processing.
 #if POST_PROCESSING
 		{
@@ -378,7 +283,7 @@ void game_main() {
 			bind_texture(ppo.texture, 0);
 			glUniform1i(screen_location, 0);
 
-			glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), t);
+			glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), frame * delta);
 			glUniform2f(glGetUniformLocation(post_process_shader.program, "sample_size"), 
 					1.0f / global.sample_width, 1.0f / global.sample_height);
 			glUniform1i(glGetUniformLocation(post_process_shader.program, "msaa"), global.msaa);
@@ -391,8 +296,10 @@ void game_main() {
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	}
 
-	delete_texture(mario);
 	delete_shader(color_shader);
+#if POST_PROCESSING
+	delete_shader(post_process_shader);
+#endif
 
 	destroy_audio();
 }

@@ -44,8 +44,8 @@ void main() {
 
 	texel = texture(screen, uv);
 	if (msaa > 1) {
-		for (int x = 1 - msaa; x < msaa - 1; x++) {
-			for (int y = 1 - msaa; y < msaa - 1; y++) {
+		for (int x = 1 - msaa; x < msaa - 1; x += 1) {
+			for (int y = 1 - msaa; y < msaa - 1; y += 1) {
 				float sample_x = uv.x + sample_size.x * float(x);
 				float sample_y = uv.y + sample_size.y * float(y);
 				float weight = 0.5f / (float(x * x + y * y) + 1.0f);

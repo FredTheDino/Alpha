@@ -1,5 +1,17 @@
 struct Vec2;
 struct Vec3;
+
+float mod(float a, float b) {
+	float d = a / b;
+	return (d - floor(d)) * b;
+}
+
+int factorial(int i) {
+	if (i == 0)
+		return 1;
+	return i * factorial(i - 1);
+}
+
 /*
 struct Vec4;
 struct Mat4;
@@ -73,25 +85,42 @@ struct Vec2 {
 		y = _y;
 	}
 
-	Vec2 operator+ (const Vec2& other) {
+	Vec2 operator+ (const Vec2& other) const {
 		return Vec2(x + other.x, y + other.y);
 	}
 
-	Vec2 operator- (const Vec2& other) {
+	Vec2 operator- (const Vec2& other) const {
 		return Vec2(x - other.x, y - other.y);
 	}
 
-	Vec2 operator* (const float scale) {
+	Vec2 operator* (const float scale) const {
 		return Vec2(x * scale, y * scale);
 	}
 
-	Vec2 operator/ (const float scale) {
+	Vec2 operator/ (const float scale) const {
 		return Vec2(x / scale, y / scale);
+	}
+
+	bool operator== (const Vec2& other) const {
+		return x == other.x && y == other.y;
+	}
+
+	Vec2 operator- () const {
+		return Vec2(-x, -y);
 	}
 };
 
+Vec2 rotate(Vec2 v, float angle) {
+	float s = sin(angle);
+	float c = cos(angle);
+	return Vec2(
+			v.x * c - v.y * s, 
+			v.x * s + v.y * c);
+}
+
 Vec2 normalize(Vec2 v) {
-	return v / (v.x * v.x + v.y * v.y);
+	float scale = 1.0 / sqrt(v.x * v.x + v.y * v.y);
+	return v * scale;
 }
 
 float dot (const Vec2& a, const Vec2& b) {

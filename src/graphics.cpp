@@ -357,13 +357,13 @@ void draw_sprite(Shader s, const Texture& texture, int sub_sprite,
 // FONT STUFF!
 //
 
-
-void split(String text, Array<String>& s, char c = ' ') {
+void split(String text, Array<String>& s, char c1 = ' ', char c2 = '\0', char c3 = '\0') {
 	int word_start = -1;
 	int word_end = -1;
 
 	for (int i = 0; i <= text.size(); i++) {
-		if (text[i] == c || text[i] == '\n' || i == text.size()) {
+		if (text[i] == c1 || text[i] == c2 || text[i] == c3
+				|| text[i] == '\n' || i == text.size()) {
 			word_end = i;
 			if (word_start == -1) continue;
 
@@ -376,9 +376,9 @@ void split(String text, Array<String>& s, char c = ' ') {
 	}
 }
 
-inline Array<String> split(String text, char c = ' ') {
+inline Array<String> split(String text, char c1 = ' ', char c2 = '\0', char c3 = '\0') {
 	Array<String> s;
-	split(text, s, c);
+	split(text, s, c1, c2, c3);
 	return s;
 }
 
@@ -440,6 +440,7 @@ Font load_font_from_files(String path) {
 
 #define SPRITE_MODE 0
 #define FONT_MODE 1
+#define FILL_MODE 2
 
 void draw_text(const Shader s, const Font& f, const Mesh m, 
 		Vec2 position = {0, 0}, Vec2 scale = {1, 1}, 
@@ -509,4 +510,74 @@ Mesh new_text_mesh(const Font& f, const String text,
 	};
 
 	return new_mesh(verticies);
+}
+
+void debug_draw_points(Shader s, Array<Vec2> points, Vec2 offset = {0, 0},
+		Vec4 color_hint = {0.6, 0.3, 0.8, 1}) {
+
+	glUniform1i(GET_LOC("draw_mode"), FILL_MODE);
+
+	glUniform2f(GET_LOC("position"), offset.x, offset.y);
+	glUniform1f(GET_LOC("rotation"), 0);
+	glUniform2f(GET_LOC("scale"), 1, 1);
+	glUniform4f(GET_LOC("color_hint"), color_hint.x, color_hint.y, color_hint.z, color_hint.w);
+	glUniform1f(GET_LOC("layer"), 10.0f);
+
+	glBegin(GL_POLYGON); 
+	{
+		for (auto p : points) {
+			glVertex4f(p.x, p.y, p.x, p.y);
+		}
+	}
+	glEnd();
+
+	glUniform1i(GET_LOC("draw_mode"), SPRITE_MODE);
+}
+
+Vec4 hsv_to_rgb(float h, float s, float v) {
+	float clamped_h = mod(h, 360.0f);
+	float c = v * s;
+	float x = c * (1 - fabs(mod(clamped_h / 60.0f, 2)) - 1);
+	float m = v - c;
+
+	Vec4 out(m, m, m, 1);
+	if (clamped_h < 60) {
+		out.x += c;
+		out.y += x;
+	} else if (clamped_h < 120) {
+		out.x += x;
+		out.y += c;
+	} else if (clamped_h < 180) {
+		out.y += c;
+		out.w += x;
+	} else if (clamped_h < 240) {
+		out.y += x;
+		out.z += c;
+	} else if (clamped_h < 300) {
+		out.x += x;
+		out.z += c;
+	} else if (clamped_h < 360) {
+		out.x += c;
+		out.w += x;
+	}
+	return out;
+}
+
+void debug_draw_body(Shader s, Body b) {
+	Vec4 color = hsv_to_rgb(b.id.pos * 50, (b.id.uid % 50) / 100 + 0.2, b.mass == 0 ? 0.4f : 0.75f);
+	debug_draw_points(s, b.shape->points, 
+			b.shape->offset + b.position, color);
+}
+
+void debug_draw_body(Shader s, PhysicsEngine& engine, const BodyID id) {
+	auto b = find_body(engine, id);
+	if (!b) return;
+
+	debug_draw_body(s, *b);
+}
+
+void debug_draw_engine(Shader s, PhysicsEngine& engine) {
+	for (Body& b : engine.bodies) {
+		debug_draw_body(s, b);
+	}
 }

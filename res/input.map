@@ -6,6 +6,10 @@ right K d
 up    K w
 down  K s
 
+reload K r
+
+jump K space
+
 turn  K x
 turn  J R1
 zoom_in K e

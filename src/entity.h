@@ -1,6 +1,8 @@
 enum EntityType {
 	NO_TYPE,
 	SPRITE_ENTITY,
+	PLAYER_ENTITY,
+	BODY_ENTITY,
 };
 
 struct EntityID {
@@ -12,7 +14,8 @@ struct EntityID {
 
 struct Entity {
 	Entity() {}
-	Entity(EntityType type, void* data, void (*update)(Entity*, float), void (*draw)(Entity*), void (*clear)(Entity*)) {
+	Entity(EntityType type, void* data, void (*update)(Entity*, float), 
+			void (*draw)(Entity*, float), void (*clear)(Entity*)) {
 		this->type = type;
 		this->data = data;
 		this->update = update;
@@ -30,7 +33,7 @@ struct Entity {
 	EntityType type = EntityType::NO_TYPE;
 		
 	void (*update)(Entity*, float) = 0;
-	void (*draw)(Entity*) = 0;
+	void (*draw)(Entity*, float) = 0;
 	void (*clear)(Entity*) = 0;
 	void* data = 0;
 };
