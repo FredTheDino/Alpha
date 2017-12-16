@@ -24,8 +24,7 @@ struct Entity {
 	}
 
 	// Meta
-	int pos;
-	int uid = -1;
+	EntityID id;
 	bool cleared = true;
 	bool alive   = false;
 	String name  = "";

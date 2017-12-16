@@ -1,9 +1,6 @@
 
 // Simular to entity.[h/cpp]
 
-// Maybe add shapes to a list and remove all of them at the end, just to make them
-// garbage collected.
-
 struct PhysicsEngine;
 struct Collision;
 
@@ -30,12 +27,10 @@ struct Body {
 	int8_t mask  = 0b11111111;
 	bool alive   = false;
 
-	// Transform transform; 
 	// Rotation or scale isn't implemented in the 
 	// collision test yet...
 
 	Vec2 velocity;
-	Vec2 last_position;
 	Vec2 position;
 	float mass = 1;
 
@@ -52,6 +47,7 @@ struct Bound {
 struct Collision {
 	BodyID id_a;
 	BodyID id_b;
+
 	Body* a;
 	Body* b;
 
@@ -59,7 +55,8 @@ struct Collision {
 	Vec2 selected_normal;
 
 	float overlap;
-	float elasticity = 0.5f;
+	float elasticity = 0.5f; // Thinking of removing this.
+	float margin;
 };
 
 struct PhysicsEngine {
@@ -67,9 +64,12 @@ struct PhysicsEngine {
 	int next_free = -1;
 	unsigned short uid_gen = 0;
 
-	Vec2 broad_phase_normal = Vec2(1, 0); // Doesn't need to be normalized, as long as all shape normals are normalized, which they have to be.
+	int itterations = 2; // Run it multiple times for stability.
+	float margin = 1.00001f;
+
+	Vec2 broad_phase_normal = Vec2(1, 0); // Does not need to be unit length.
 	Array<Bound> bounds;
-	int itterations = 2;
+
 
 	Vec2 gravity = Vec2(0, -1);
 } engine;

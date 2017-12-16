@@ -21,7 +21,7 @@ struct Texture {
 	Texture() {}
 	Texture(String path, int sx, int sy);
 	int w, h;
-	unsigned texture_id;
+	unsigned texture_id = -1;
 	unsigned sprites_x;
 	unsigned sprites_y;
 };

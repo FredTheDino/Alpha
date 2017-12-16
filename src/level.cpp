@@ -1,3 +1,27 @@
+Shape* get_shape_from_level(Level& l, String shape) {
+	auto it = l.shapes.find(shape);
+	if (it == l.shapes.end()) {
+		printf("Trying to find unknown shape '%s' when loading level\n", 
+				shape.c_str());
+		return nullptr;
+	}
+	return it->second;
+}
+
+Texture get_texture_from_level(Level& l, String texture) {
+	auto it = l.textures.find(texture);
+	if (it == l.textures.end()) {
+		printf("Trying to find unknown texture '%s' when loading level\n", 
+				texture.c_str());
+		return Texture();
+	}
+	return it->second;
+}
+
+Vec2 parse_vec2(String x, String y) {
+	return Vec2(stof(x), stof(y));
+}
+
 Array<Vec2> load_level_points(String line) {
 	auto split_line = split(line, ',', ';', ' ');
 
@@ -37,31 +61,49 @@ Entity load_level_entity(Level& l, String type, String line) {
 	if (type == "PLAYER") {
 		if (sl.size() < 4) 
 			return Entity();
+		
+		Shape* s = get_shape_from_level(l, sl[2]);
+		if (s == nullptr)
+			return Entity();
+
+		Texture t = get_texture_from_level(l, sl[3]);
+		if (t.texture_id == -1)
+			return Entity();
+
 		return new_player(
 				Vec2(stof(sl[0]), stof(sl[1])),
-				l.shapes[sl[2]],
-				&color_shader,
-				&l.textures[sl[3]]
+				s,
+				t
 				);
 
 	} else if (type == "SPRITE") {
 		if (sl.size() < 7) 
 			return Entity();
+
+		Texture t = get_texture_from_level(l, sl[5]);
+		if (t.texture_id == -1)
+			return Entity();
+
 		return new_sprite_entity(
-				Vec2(stof(sl[0]), stof(sl[1])),
-				Vec2(stof(sl[2]), stof(sl[3])),
+				parse_vec2(sl[0], sl[1]),
+				parse_vec2(sl[2], sl[3]),
 				stof(sl[4]),
-				&color_shader,
-				&l.textures[sl[5]],
+				t,
 				stoi(sl[6])
 				);
 	} else if (type == "BODY") {
 		if (sl.size() < 4) 
 			return Entity();
+
+		Shape* s = get_shape_from_level(l, sl[3]);
+
+		if (s == nullptr)
+			return Entity();
+
 		return new_body_entity(
-				Vec2(stof(sl[0]), stof(sl[1])),
+				parse_vec2(sl[0], sl[1]),
 				stof(sl[2]),
-				l.shapes[sl[3]]
+				s
 				);
 
 	}
@@ -80,6 +122,10 @@ void clear_level(Level& l) {
 	for (auto it : l.textures) {
 		delete_texture(it.second);
 	}
+}
+
+Level::~Level() {
+	clear_level(*this);
 }
 
 

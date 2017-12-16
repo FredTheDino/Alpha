@@ -1,43 +1,3 @@
-Vec2 project_along(Shape* s, Vec2 v) {
-	Vec2 bounds = {FLT_MAX, -FLT_MAX};
-	for (auto p : s->points) {
-		float d = dot(p, v);
-		bounds._[0] = fmin(bounds._[0], d);
-		bounds._[1] = fmax(bounds._[1], d);
-	}
-
-	return bounds;
-}
-
-void gen_normals_from_points(Array<Vec2> points, Array<Vec2>& normals) {
-	int size = points.size();
-	Vec2 edge;
-	normals.resize(size);
-	int curr = 0;
-
-	for (int i = 0; i < size; i++) {
-		int j = (i + 1) % size;
-		edge = points[i] - points[j];
-
-		if (edge.x == 0 && edge.y == 0) continue;
-
-		bool unique = true;
-		for (int i = 0; i < curr; i++) {
-			if (dot(normals[i], edge) == 0.0f) {
-				unique = false;
-				break;
-			}
-		}
-
-		if (!unique) continue;
-		
-		Vec2 n = {-edge.y, edge.x}; // Rotation in constructor.
-		normals[curr++] = normalize(n);
-	}
-
-	normals.resize(curr);
-} 
-
 Shape::Shape(PhysicsEngine& engine, Array<Vec2> points) {
 	Vec2 sum;
 	for (auto p : points) {
@@ -58,7 +18,7 @@ Shape::Shape(PhysicsEngine& engine, Array<Vec2> points) {
 }
 
 Shape::Shape(PhysicsEngine& engine, Array<Vec2> points, Array<Vec2> normals): 
-points(points), normals(normals) {
+	points(points), normals(normals) {
 	this->bounds = project_along(this, engine.broad_phase_normal);
 };
 
@@ -152,34 +112,6 @@ void clear(PhysicsEngine& engine) {
 	engine.bounds.clear();
 }
 
-
-bool can_collide(const Body& a, const Body& b) {
-	if ((a.mask & b.mask) == 0) return false;
-	if (a.mass == 0 && b.mass == 0) return false;
-	return true;
-}
-
-void fuse_without_duplicates(const Array<Vec2>& a, const Array<Vec2>& b, 
-		Array<Vec2>& out) {
-	out = a;
-	out.reserve(a.size() + b.size());
-	
-	for (auto data_b : b) {
-		bool unique = true;
-		for (auto data_a : a) {
-			if (data_a == data_b) {
-				unique = false;
-				break;
-			}
-		}
-
-		if (unique) {
-			out.push_back(data_b);
-		}
-	}
-
-}
-
 bool collision_check(Collision* c) {
 	Body a = (*c->a);
 	Body b = (*c->b);
@@ -247,24 +179,6 @@ void update_bounds(PhysicsEngine& engine, Array<Bound>& list) {
 	}
 }
 
-#define COLLISION_MARGIN 1.0001f
-
-void move_ds(Collision& c) {
-	Body* d;
-
-	Vec2 normal; // Should point from the static
-	if (c.a->mass == 0) {
-		d = c.b;
-		normal = c.normal;
-	} else {
-		d = c.a;
-		normal = -c.normal;
-	}
-
-	// Move the dynamic body
-	d->position = d->position + normal * c.overlap * COLLISION_MARGIN;
-}
-
 void solve_ds(Collision& c) {
 	Body* d;
 	Body* s;
@@ -279,24 +193,14 @@ void solve_ds(Collision& c) {
 		s = c.b;
 		normal = -c.normal;
 	}
+	
+	// Move the dynamic body
+	d->position = d->position + normal * c.overlap * c.margin;
 
 	// Cancel all the velocity going towards the static
 	float dot_vel = dot(d->velocity, normal);
 	if (0 < dot_vel) return;
 	d->velocity = d->velocity - normal * dot_vel * (1 + c.elasticity);
-}
-
-void move_dd(Collision& c) {
-	Body* a = c.a;
-	Body* b = c.b;
-	
-	// Make sure they don't penetrate, based on mass ratio
-	float inverted_total_mass = 1.0f / (a->mass + b->mass);
-	float a_distnace = inverted_total_mass * a->mass * c.overlap;
-	float b_distnace = inverted_total_mass * b->mass * c.overlap;
-	a->position = a->position - c.normal * a_distnace * COLLISION_MARGIN;
-	b->position = b->position + c.normal * b_distnace * COLLISION_MARGIN;
-
 }
 
 void solve_dd(Collision& c) {
@@ -305,6 +209,10 @@ void solve_dd(Collision& c) {
 
 	// Make sure they don't penetrate, based on mass ratio
 	float inverted_total_mass = 1.0f / (a->mass + b->mass);
+	float a_distnace = inverted_total_mass * a->mass * c.overlap;
+	float b_distnace = inverted_total_mass * b->mass * c.overlap;
+	a->position = a->position - c.normal * a_distnace * c.margin;
+	b->position = b->position + c.normal * b_distnace * c.margin;
 	
 	// We're done if they're not gonna collide.
 	if (dot(a->velocity, b->velocity) > 0) return; // Shouldn't this be the other way around?
@@ -317,14 +225,11 @@ void solve_dd(Collision& c) {
 	b->velocity = b->velocity + c.normal * relative_1d_momentum * a->mass;
 }
 
-#undef COLLISION_MARGIN
-
 void update_physics_engine(PhysicsEngine& engine, float delta) {
 	for (Body& b : engine.bodies) {
 		b.collisions.clear();
 		if (b.mass == 0) continue;
 		b.velocity = b.velocity + engine.gravity * delta;
-		b.last_position = b.position;
 		b.position = b.position + b.velocity * delta;
 	}	
 
@@ -333,17 +238,9 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 	int num_potential_collisions = 0;
 	int num_collisions = 0;
 
-#ifdef DEBUG_PHYSICS
-	printf("---------------\n");
-#endif
 	for (int step = 0; step < engine.itterations; step++) {
 		for (int i = 0; i < engine.bounds.size() - 1; i++) {
 			Bound bound_a = engine.bounds[i];
-
-#ifdef DEBUG_PHYSICS
-			printf("%d) @%d, min: %f, max:%f\n", i, bound_a.id.pos, 
-			bound_a.v._[0], bound_a.v._[1]);
-#endif
 
 			for (int j = i + 1; j < engine.bounds.size(); j++) {
 
@@ -355,42 +252,23 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 				Body* a = find_body(engine, bound_a.id);
 				Body* b = find_body(engine, bound_b.id);
 
-				// printf("-bp- %d hit %d\n", i, j);
 				if (!can_collide(*a, *b)) continue;
-
-				// Do actual collision test here...
-				//
-				// The broadphase might not be as thuroughly
-				// tested as it should be.
-				//
-
-#ifdef DEBUG_PHYSICS
-				printf("-bp- %d hit %d\n", i, j);
-#endif
 
 				Collision c;
 				c.a = a;
 				c.b = b;
 				c.id_a = a->id;
 				c.id_b = b->id;
-				if (!collision_check(&c)) continue;
+				c.margin = engine.margin;
 
-#ifdef DEBUG_PHYSICS
-				printf("---- %d hit %d\n", i, j);
-				printf("Normal: %f, %f. D: %f\n", c.normal.x, c.normal.y, c.overlap);
-				printf("a: %f, %f\n", a->position.x, a->position.y);
-				printf("b: %f, %f\n", b->position.x, b->position.y);
-#endif
+				if (!collision_check(&c)) continue;
 
 				bool is_ds = a->mass == 0 || b->mass == 0;
 
-				if (is_ds) {
-					move_ds(c);
+				if (is_ds)
 					solve_ds(c);
-				} else {
-					move_dd(c);
+				else
 					solve_dd(c);
-				}
 
 				c.selected_normal = c.normal;
 				b->collisions.push_back(c);
@@ -401,9 +279,5 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 			}
 		}
 	}
-
-	// printf("num_pot: %d\n    num: %d\nnum_checks: %d\n", 
-	//		num_potential_collisions, num_collisions, 
-	//		factorial(engine.bodies.size()) * 2);
 }
 

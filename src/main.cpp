@@ -50,11 +50,13 @@ Shader post_process_shader;
 
 // My very own containers
 //#include "containers.cpp"
+#include "physics_helper.cpp"
 #include "physics.cpp"
 #include "graphics.cpp"
 #include "input.cpp"
 #include "audio.cpp"
 #include "entity.cpp"
+#include "entity_type.cpp"
 #include "level.h"
 #include "level.cpp"
 
