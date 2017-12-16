@@ -103,7 +103,7 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 
 		draw_sprite(*p->s.shader, p->s.texture, 
 				p->s.sub_sprite, p->position, 
-				{0, 0}, 0, 
+				{1, 1}, 0, 
 				{1, 1, 1, 1}, p->s.layer);
 	};
 

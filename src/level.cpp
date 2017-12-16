@@ -18,6 +18,15 @@ Texture get_texture_from_level(Level& l, String texture) {
 	return it->second;
 }
 
+void add_shape_to_level(Level& l, String name, Shape* _s) {
+	Shape* s = new Shape(*_s);
+	l.shapes[name] = s;
+}
+
+void add_texture_to_level(Level& l, String name, Texture t) {
+	l.textures[name] = t;
+}
+
 Vec2 parse_vec2(String x, String y) {
 	return Vec2(stof(x), stof(y));
 }

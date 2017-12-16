@@ -2,14 +2,15 @@
 s:triangel: -1, -1; 1, -1; 1, 1
 s:square: -1, -1; 1, -1; 1, 1; -1, 1
 # Loads a texture
-t:p_sprite: res/mario; 2; 1, 1
-t:s_sprite: res/other; 1; 1, 1
+t:p_sprite: res/mario; 1; 1, 1
+t:s_sprite: res/mario; 1; 3, 1
 
 # Adds an entity
-e:PLAYER name: 0, 2; square, p_sprite
+e:PLAYER player: 0, 2; square, s_sprite
 e:SPRITE: 0, -1; 1, 1; 0; p_sprite; 0
 e:SPRITE: 1, -1; 1, 1; 1; p_sprite; 0
 e:SPRITE: 2, -1; 1, 1; 2; p_sprite; 0
-e:BODY: -3, 0, 0, square;
+e:BODY: -3.5, 0, 0, square;
 e:BODY:  3, 1, 0, square;
-e:BODY:  0, 0, 0, triangel;
+e:BODY:  1, 0, 0, triangel;
+e:BODY:  -1, -2, 0, triangel;
