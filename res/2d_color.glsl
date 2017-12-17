@@ -47,7 +47,7 @@ vec2 rotate(vec2 point, float angle) {
 
 void vertex_sprite() {
 	vec2 world_position = rotate(vert_position * scale, rotation) + position;
-	vec2 projected = vec2(world_position + cam_pos);
+	vec2 projected = vec2(world_position - cam_pos);
 
 	projected = rotate(projected, cam_rot);
 
@@ -69,7 +69,7 @@ void vertex_sprite() {
 
 void vertex_text() {
 	vec2 world_position = rotate(vert_position * scale, rotation) + position;
-	vec2 projected = vec2(world_position + cam_pos);
+	vec2 projected = vec2(world_position - cam_pos);
 
 	projected = rotate(projected, cam_rot);
 

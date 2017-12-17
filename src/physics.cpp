@@ -166,8 +166,8 @@ void update_bounds(PhysicsEngine& engine, Array<Bound>& list) {
 		Body& body = *find_body(engine, b.id);
 
 		float projection = 
-			dot(body.position, engine.broad_phase_normal);
-		b.v = Vec2(projection, projection) + body.shape->bounds - body.shape->offset;
+			dot(body.position + body.shape->offset, engine.broad_phase_normal);
+		b.v = Vec2(projection, projection) + body.shape->bounds;
 	}
 
 	for (int i = 1; i < list.size(); i++) {
@@ -198,9 +198,9 @@ void solve_ds(Collision& c) {
 	d->position = d->position + normal * c.overlap * c.margin;
 
 	// Cancel all the velocity going towards the static
-	float dot_vel = dot(d->velocity, normal);
-	if (0 < dot_vel) return;
-	d->velocity = d->velocity - normal * dot_vel * (1 + c.elasticity);
+	c.impulse = dot(d->velocity, normal);
+	if (0 < c.impulse) return;
+	d->velocity = d->velocity - normal * c.impulse;
 }
 
 void solve_dd(Collision& c) {
@@ -218,11 +218,10 @@ void solve_dd(Collision& c) {
 	if (dot(a->velocity, b->velocity) > 0) return; // Shouldn't this be the other way around?
 
 	Vec2 relative_velocity = a->velocity - b->velocity;
-	float relative_1d_momentum = dot(relative_velocity, c.normal) * 
-		inverted_total_mass * (1 + c.elasticity);
+	c.impulse = dot(relative_velocity, c.normal) * inverted_total_mass;
 
-	a->velocity = a->velocity - c.normal * relative_1d_momentum * b->mass;
-	b->velocity = b->velocity + c.normal * relative_1d_momentum * a->mass;
+	a->velocity = a->velocity - c.normal * c.impulse * b->mass;
+	b->velocity = b->velocity + c.normal * c.impulse * a->mass;
 }
 
 void update_physics_engine(PhysicsEngine& engine, float delta) {
@@ -241,6 +240,7 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 	for (int step = 0; step < engine.itterations; step++) {
 		for (int i = 0; i < engine.bounds.size() - 1; i++) {
 			Bound bound_a = engine.bounds[i];
+			printf("%d) %0.3f:%0.3f\n", i, bound_a.v.x, bound_a.v.y);
 
 			for (int j = i + 1; j < engine.bounds.size(); j++) {
 
@@ -263,12 +263,14 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 
 				if (!collision_check(&c)) continue;
 
-				bool is_ds = a->mass == 0 || b->mass == 0;
+				if (!a->is_trigger && !b->is_trigger) {
+					bool is_ds = a->mass == 0 || b->mass == 0;
 
-				if (is_ds)
-					solve_ds(c);
-				else
-					solve_dd(c);
+					if (is_ds)
+						solve_ds(c);
+					else
+						solve_dd(c);
+				}
 
 				c.selected_normal = c.normal;
 				b->collisions.push_back(c);

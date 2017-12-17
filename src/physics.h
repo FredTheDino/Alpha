@@ -26,6 +26,7 @@ struct Body {
 	Shape* shape = nullptr;
 	int8_t mask  = 0b11111111;
 	bool alive   = false;
+	bool is_trigger = false;
 
 	// Rotation or scale isn't implemented in the 
 	// collision test yet...
@@ -55,7 +56,7 @@ struct Collision {
 	Vec2 selected_normal;
 
 	float overlap;
-	float elasticity = 0.5f; // Thinking of removing this.
+	float impulse;
 	float margin;
 };
 

@@ -3,6 +3,7 @@ enum EntityType {
 	SPRITE_ENTITY,
 	PLAYER_ENTITY,
 	BODY_ENTITY,
+	CAMERA_CONTROLLER_ENTITY,
 };
 
 struct EntityID {

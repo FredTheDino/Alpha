@@ -103,7 +103,7 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 
 		draw_sprite(*p->s.shader, p->s.texture, 
 				p->s.sub_sprite, p->position, 
-				{1, 1}, 0, 
+				{0.5, 0.5}, 0, 
 				{1, 1, 1, 1}, p->s.layer);
 	};
 
@@ -128,15 +128,31 @@ Entity new_body_entity(Vec2 position, float mass, Shape* shape) {
 	e.data = id;
 	e.type = BODY_ENTITY;
 
-	e.update = [](Entity* e, float delta) {
-	};
-
-	e.draw   = [](Entity* e, float t) {
-	};
-
 	e.clear  = [](Entity* e) {
 		delete (BodyID*) e->data;
 	};
 	return e;
 }
 
+Entity new_camera_controller() {
+	Entity e;
+	e.type = CAMERA_CONTROLLER_ENTITY;
+
+	e.update = [](Entity* e, float delta) {
+		static int last_uid = 0;
+		Entity* player = find_entity(entity_list, "player");
+		if (player == nullptr) {
+			return;
+		}
+
+		Body* body = find_body(engine, ((Player*) player->data)->body);
+		if (body == nullptr)
+			return;
+
+		Vec2 delta_pos = body->velocity * 1.1f + ((Player*) player->data)->position - 
+			main_camera.position;
+		main_camera.position = main_camera.position + delta_pos * delta;
+	};
+
+	return e;
+}

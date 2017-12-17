@@ -25,21 +25,16 @@ EntityID add_entity(EntityList& list, Entity e) {
 	return id;
 }
 
-EntityID add_entity(EntityList& list, String name, Entity e, bool replace = true) {
+EntityID add_entity(EntityList& list, String name, Entity e) {
 	EntityID id;
 	id.pos = -1;
 	id.uid = -1;
 
-	if (!replace) {
-		EntityID id = list.name_to_id[name];
-		const Entity e = list.entities[id.pos];
-		if (!e.alive || !e.cleared) 
-			return id;
-	}
-
 	e.name = name;
 	id = add_entity(list, e);
 	list.name_to_id[name] = id;
+
+	printf("Added entity %s@%d:%d\n", name.c_str(), id.pos, id.uid);
 	return id;
 }
 

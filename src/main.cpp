@@ -224,6 +224,7 @@ void game_main() {
 	auto text_mesh = new_text_mesh(droid_sans, "Hello World");
 
 	main_camera.zoom = 4;
+	add_entity(entity_list, new_camera_controller());
 
 	float t = 0.0f;
 	float buffer = 0;
@@ -259,6 +260,7 @@ void game_main() {
 			}
 			if (pressed("reload")) {
 				reload_level(level);
+				add_entity(entity_list, new_camera_controller());
 			}
 		}
 
