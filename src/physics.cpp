@@ -240,7 +240,6 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 	for (int step = 0; step < engine.itterations; step++) {
 		for (int i = 0; i < engine.bounds.size() - 1; i++) {
 			Bound bound_a = engine.bounds[i];
-			printf("%d) %0.3f:%0.3f\n", i, bound_a.v.x, bound_a.v.y);
 
 			for (int j = i + 1; j < engine.bounds.size(); j++) {
 

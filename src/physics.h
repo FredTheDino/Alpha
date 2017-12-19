@@ -72,5 +72,5 @@ struct PhysicsEngine {
 	Array<Bound> bounds;
 
 
-	Vec2 gravity = Vec2(0, -1);
+	Vec2 gravity = Vec2(0, 0); // I think I want to do this manually...
 } engine;

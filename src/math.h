@@ -132,3 +132,16 @@ struct Transform {
 	Vec2 scale = {1, 1};
 	float rotation = 0.0f;
 };
+
+float min(float v, float _min) {
+	return v < _min ? v : _min;
+}
+
+float max(float v, float _max) {
+	return _max < v ? v : _max;
+}
+
+float clamp(float v, float _min, float _max) {
+	return max(min(v, _max), _min);
+}
+

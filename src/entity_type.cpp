@@ -10,13 +10,21 @@ struct SpriteEntity {
 	Transform t;
 };
 
+// Tweek this some more!
+
 struct Player {
 	Sprite s;
 	Vec2 position;
 	BodyID body;
 
-	float speed = 7;
+	float run_acceleration = 500;
+	float max_speed = 500;
 	float jump_vel = 1;
+
+	int facing_direction = 0;
+	int last_moved_direction = 1;
+
+	float speed;
 };
 
 // 
@@ -77,14 +85,28 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 	e.type = PLAYER_ENTITY;
 
 	e.update = [](Entity* e, float delta) {
-		Player* p = (Player*) e->data;
-		Body* b = find_body(engine, p->body);
+		Player& p = *(Player*) e->data;
+		Body& b = *find_body(engine, p.body);
 
-		b->velocity.x += delta * p->speed * (value("right") - value("left"));
-		b->velocity.y += delta * p->speed * (value("up") - value("down"));
+		if (is_down("right")) {
+			p.last_moved_direction = 1;
+			p.facing_direction = 1;
+			p.speed += delta * p.run_acceleration * (value("right"));
+		} else if (is_down("left")) {
+			p.last_moved_direction = -1;
+			p.facing_direction = -1;
+			p.speed += delta * p.run_acceleration * (value("left"));
+		} else {
+			p.speed -= p.run_acceleration * 1.5f * delta;
+			p.facing_direction = 0;
+		}
+
+		p.speed = clamp(p.speed, 0, p.max_speed);
+		printf("Speed : %f\n", p.speed);
+		b.velocity.x = p.speed * p.last_moved_direction * delta;
 		
 		bool grounded = false;
-		for (auto c : b->collisions) {
+		for (auto c : b.collisions) {
 			if (dot(c.selected_normal, Vec2(0, 1)) > 0.75f) {
 				grounded = true;
 				break;
@@ -92,10 +114,11 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 		}
 
 		if (grounded && pressed("jump")) {
-			b->velocity.y = p->jump_vel;
+			b.velocity.y = p.jump_vel;
 		}
 
-		p->position = b->position;
+		// Needed for rendering.
+		p.position = b.position;
 	};
 
 	e.draw   = [](Entity* e, float t) {
