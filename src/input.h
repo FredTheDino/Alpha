@@ -17,14 +17,14 @@ enum INPUT_STATE {
 struct InputAction {
 	String input_name;
 	bool is_keyboard = true;
+	int controller = -1;
 	int input = 0;
-	//int modifyers = 0; // Used for keyboards for Alt, Ctrl, Shift etc...
 	INPUT_STATE state = INPUT_STATE::UP;
 	float value = 0.0f;
 };
 
 enum CONTROLLER_TYPE {
-	NONE,
+	NO_CONTROLLER,
 	UNKNOWN,
 	DS3,
 	DS4,
@@ -68,7 +68,7 @@ enum CONTROLLER_BUTTONS {
 };
 
 struct Controller {
-	CONTROLLER_TYPE type = CONTROLLER_TYPE::NONE;
+	CONTROLLER_TYPE type = CONTROLLER_TYPE::NO_CONTROLLER;
 
 	struct {
 		float left_up    = 0;

@@ -1,7 +1,7 @@
 @echo off
 del bin /Q
 
-call path.bat
+:: call path.bat
 call build.bat
 
 echo -

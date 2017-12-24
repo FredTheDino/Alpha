@@ -1,213 +1,138 @@
-// Entity-Component-System, the easy way.
-// Maybe move this to header file?
+EntityID add_entity(EntityList& list, Entity e) {
+	EntityID id = {};
+	// Set some meta info
+	e.alive   = true;
+	e.cleared = false;
 
-enum System_Type {
-	TEST, // Really, really bad name.
-	NUM_SYSTEM_TYPES,
-};
-
-// Woo forward declariton
-struct System;
-
-// The list of systems.
-typedef Array<System*> All_Systems;
-All_Systems all_systems;
-
-struct System {
-
-	System(All_Systems& all_sys, System_Type type, void (*update)(float), void (*draw)()) {
-		assert(0 <= type);
-		assert(type < NUM_SYSTEM_TYPES);
-
-		size_t size = all_sys.size();
-		if (size < NUM_SYSTEM_TYPES) {
-			all_sys.resize(NUM_SYSTEM_TYPES);
-		}
-	
-		this->type = type;
-		this->update = update;
-		this->draw = draw;
-	
-		all_sys[type] = this;
-	}
-
-	System_Type type;
-
-	void (*update)(float delta);
-	void (*draw)();
-
-	// Don't know if this should be here....
-	// Array<void*> components;
-};
-
-void update_system(All_Systems all_sys, float delta) {
-	auto size = all_sys.size();
-	for (int i = 0; i < size; i++) {
-		auto sys = all_sys[i];
-		sys->update(delta);
-	}
-}
-
-void draw_system(All_Systems all_sys) {
-	auto size = all_sys.size();
-	for (int i = 0; i < size; i++) {
-		auto sys = all_sys[i];
-		sys->draw();
-	}
-}
-
-// Entity stuff...
-
-struct Component_Pointer {
-	int component_id;
-	System_Type type;
-
-	bool operator== (const Component_Pointer& other) const {
-		return component_id == other.component_id 
-			&& type == other.type;
-	}
-};
-
-struct Entity_ID {
-	int position;
-	int unique_id;
-
-	bool operator== (const Entity_ID& other) const {
-		return position == other.position && unique_id == other.unique_id;
-	}
-};
-
-struct Entity {
-	Entity(int flags=0) {
-		this->flags = flags;
-	}
-
-	Entity_ID id;
-	int flags;
-	Array<Component_Pointer> components;
-
-	bool operator== (const Entity& other) const {
-		return id == id;
-	}
-};
-
-struct Entity_List {
-	Stack<int> free_pos;
-	Array<Entity> list;
-};
-
-Entity* get(Entity_List& el, Entity_ID id) {
-	Entity* other = &el.list[id.position];
-	if (other->id == id) {
-		return other;
-	}
-	return nullptr;
-}
-
-Entity_ID new_entity(Entity_List& el) {
-	int pos = -1;
-	if (el.free_pos.size() == 0) {
-		// We need to make more space.
-		pos = el.list.size();
-		el.list.push_back(Entity());
+	if (list.next_free == -1) {
+		// Add a new one
+		id.pos = list.entities.size();
+		list.entities.push_back(e);
 	} else {
-		// Just slot it in.
-		pos = el.free_pos.top();
-		el.free_pos.pop();
+		// Use an old one
+		id.pos = list.next_free;
+		// Update the next free.
+		list.next_free = -list.entities[id.pos].id.uid;
 	}
 
-	el.list[pos] = Entity();
-	Entity_ID& id = el.list[pos].id;
-	id.position = pos;
-	do {
-		id.unique_id += 1;
-	} while (id.unique_id == 0);
+	id.uid = list.uid_gen++;
+
+	e.id.pos = id.pos;
+	e.id.uid = id.uid;
+
+	entity_list.entities[id.pos] = Entity(e);
 
 	return id;
 }
 
-bool remove_entity(Entity_List& el, Entity_ID id) {
-	Entity* e = get(el, id);
-	if (!e) return false;
-	if (e->id.position == -1) return false;
-	// So we know there's nothing here.
-	e->id.position = -1;
-	
-	// All done.
-	el.free_pos.push(id.position);
+EntityID add_entity(EntityList& list, String name, Entity e) {
+	EntityID id;
+	id.pos = -1;
+	id.uid = -1;
+
+	e.name = name;
+	id = add_entity(list, e);
+	list.name_to_id[name] = id;
+
+	printf("Added entity %s@%d:%d\n", name.c_str(), id.pos, id.uid);
+	return id;
+}
+
+Entity* find_entity(EntityList& list, EntityID id) {
+	if (id.pos < 0) 
+		return nullptr;
+	if (list.entities.size() < id.pos) 
+		return nullptr;
+
+	const Entity& e = list.entities[id.pos];
+	if (e.id.uid != id.uid)
+		return nullptr;
+
+	if (e.alive)
+		return &list.entities[id.pos];
+
+	return nullptr;
+}
+
+Entity* find_entity(EntityList& list, String name) {
+	try {
+		return find_entity(list, list.name_to_id[name]);
+	} catch (std::out_of_range) {
+		return nullptr;
+	}
+}
+
+bool remove_entity(EntityList& list, EntityID id) {
+	Entity* e = find_entity(list, id);
+	if (e == nullptr)
+		return false;
+
+	e->alive = false;
+	e->id.uid   = -id.uid;
+	list.dead.push_back(id.pos);
+
+	if (e->name != "")
+		list.name_to_id.erase(e->name);
+
 	return true;
 }
 
-namespace file {
-	void test_update(float delta);
-	void test_draw();
+bool remove_entity(EntityList& list, String name) {
+	return remove_entity(list, list.name_to_id[name]);
 }
 
-struct Test_Component;
-
-struct Test {
-	Test() : s(all_systems, TEST, file::test_update, file::test_draw) {}
-	// Note, this has to be first, this is so they share pointer.
-	System s;
-	Array<Test_Component> components;
-} test;
-// A way to do polymorphism without using C++ inheritance.
-System* test_system = (System*)(void*)&test;
-
-struct Test_Component {
-	float data;
-};
-
-Component_Pointer make_test_component(float data) {
-	Component_Pointer ptr;
-	ptr.type = System_Type::TEST;
-	ptr.component_id = test.components.size();
-
-	Test_Component c;
-	c.data = data;
-	test.components.push_back(c);
-
-	return ptr;
+void clear(EntityList& list) {
+	for (Entity& e : list.entities) {
+		e.alive = false;
+		if (e.cleared) continue;
+		if (e.clear)
+			e.clear(&e);
+		
+		e.cleared = true;
+		e.id.uid = -list.next_free;
+		list.next_free = e.id.pos;
+	}
 }
 
-namespace file {
-	void test_update(float delta) {
-		printf("Update!\n");
-		for (auto c : test.components) {
-			printf("c.data: %f\n", c.data);
+void update_entities(EntityList& list, float delta) {
+	for (int i = 0; i < list.entities.size(); i++) {
+		Entity& e = list.entities[i];
+		if (!e.alive) continue;
+		if (!e.update) continue;
+		e.update(&e, delta);
+	}
+}
+
+void draw_entities(EntityList& list, float t) {
+	for (int i = 0; i < list.entities.size(); i++) {
+		Entity& e = list.entities[i];
+		if (!e.alive) continue;
+		if (!e.draw) continue;
+		e.draw(&e, t);
+	}
+}
+
+void gc_entities(EntityList& list) {
+	if (list.dead.size() != 0) {
+		for (int i = 0; i < list.dead.size(); i++) {
+			int pos = list.dead[i];
+			Entity& e = list.entities[pos];
+
+			if (e.clear)
+				e.clear(&e);
+
+			e.cleared = true;
+			e.id.uid = -list.next_free;
+			list.next_free = pos;
 		}
+		list.dead.clear();
 	}
+} 
 
-	void test_draw() {
+EntityList::~EntityList() {
+	for (int i = 0; i < entities.size(); i++) {
+		Entity& e = entities[i];
+		if (!e.cleared && e.clear)
+			e.clear(&e);
 	}
 }
-
-void add_component(Entity_List& el, Entity_ID id, Component_Pointer ptr) {
-	auto e = get(el, id);
-	e->components.push_back(ptr);
-}
-
-/*
-bool remove_component(Entity_ID id, Component_Pointer ptr) {
-	bool erased = false;
-	for (auto it : e->begin()) {
-		if (it == ptr) {
-			e->erase(it);
-			erased = true;
-		}
-	}
-	return erased;
-}
-
-bool remove_component(Entity_ID id, System_Type type) {
-	bool erased = false;
-	for (auto it : e->begin()) {
-		if (it.type == type) {
-			e->erase(it);
-			erased = true;
-		}
-	}
-	return erased;
-}
-*/
-

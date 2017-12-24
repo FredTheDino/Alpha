@@ -2,9 +2,13 @@
 
 // This is needed for ES.
 precision highp float;
+precision highp int;
 
 uniform sampler2D screen;
 uniform float time;
+
+uniform vec2 sample_size;
+uniform int msaa;
 
 #define VERT 1
 #ifdef VERT
@@ -34,17 +38,27 @@ int pixels_x = 300;
 int pixels_y = 300;
 
 void main() {
-	// vec2 uv = vec2(floor(fragUV.x * pixels_x) / pixels_x, floor(fragUV.y * pixels_y) / pixels_y);
-	vec2 uv = fragUV;
+	//vec2 uv = vec2(floor(fragUV.x * pixels_x) / pixels_x, floor(fragUV.y * pixels_y) / pixels_y);
+	vec2 uv = fragUV * float(msaa);
 	vec4 texel;
-	texel = texture(screen, uv);
 
-	float gamma = 2.5;
+	texel = texture(screen, uv);
+	if (msaa > 1) {
+		for (int x = 1 - msaa; x < msaa - 1; x += 1) {
+			for (int y = 1 - msaa; y < msaa - 1; y += 1) {
+				float sample_x = uv.x + sample_size.x * float(x);
+				float sample_y = uv.y + sample_size.y * float(y);
+				float weight = 0.5f / (float(x * x + y * y) + 1.0f);
+				texel = mix(texel, texture(screen, vec2(sample_x, sample_y)), weight);
+			}
+		}
+	} 
+
+	float gamma = 1.5;
 	color = vec4(
-	(texel.r - 0.5) * gamma + 0.5, 
-	(texel.g - 0.5) * gamma + 0.5, 
-	(texel.b - 0.5) * gamma + 0.5, 1.0);
+		(texel.r - 0.5) * gamma + 0.5, 
+		(texel.g - 0.5) * gamma + 0.5, 
+		(texel.b - 0.5) * gamma + 0.5, 1.0);
 	color.w = 1.0;
 }
-
 #endif

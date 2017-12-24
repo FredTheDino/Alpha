@@ -106,15 +106,15 @@ void poll_controller_data(InputMap& map) {
 		CONTROLLER_TYPE& type = map.controllers[i].type;
 		int present = glfwJoystickPresent(i);
 		if (!present) {
-			if (type != CONTROLLER_TYPE::NONE) {
+			if (type != CONTROLLER_TYPE::NO_CONTROLLER) {
 				// Disconnect
-				type = CONTROLLER_TYPE::NONE;
+				type = CONTROLLER_TYPE::NO_CONTROLLER;
 				printf("Controller %d disconnected.\n", i);
 			}
 			continue;
 		}
 
-		if (present && type == CONTROLLER_TYPE::NONE) {
+		if (present && type == CONTROLLER_TYPE::NO_CONTROLLER) {
 			// Connect
 			printf("Connected controller %d as a ", i);
 			String name = glfwGetJoystickName(i);
@@ -135,7 +135,7 @@ void poll_controller_data(InputMap& map) {
 			case CONTROLLER_TYPE::XBONE:
 				handle_xbone(i, c);
 				break;
-			case CONTROLLER_TYPE::NONE:
+			case CONTROLLER_TYPE::NO_CONTROLLER:
 			case CONTROLLER_TYPE::UNKNOWN:
 				break;
 			default:
@@ -169,11 +169,41 @@ void update_input(InputMap& map = input_map) {
 				map.inputs[action.input_name].value = 1.0f;
 			}
 		} else {
-			float value = map.controllers[0][action.input];
-			float& curr_value = map.inputs[action.input_name].value;
-			if (value > curr_value) {
+			float value = 0;
+			// Loop through all.
+			if (action.controller == -1) {
+				for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
+					if (map.controllers[i].type == NO_CONTROLLER) {
+						break;
+					}
+					float current = map.controllers[i][action.input];
+					if (value < current) {
+						value = current;
+					}
+				}
+			// Only the first known controller type.
+			} else {
+				int counter = -1;
+				for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
+					if (map.controllers[i].type == NO_CONTROLLER) {
+						break;
+					}
+					if (map.controllers[i].type == UNKNOWN) {
+						continue;
+					}
+					
+					counter++;
+					if (counter == action.controller) {
+						value = map.controllers[i][action.input];
+						break;
+					}
+				}
+			}
+
+			float curr_value = map.inputs[action.input_name].value;
+			if (curr_value < value) {
 				used_controller = true;
-				curr_value = value;
+				map.inputs[action.input_name].value = value;
 			}
 		}
 	}
@@ -260,7 +290,7 @@ int string_to_joy(String& key) {
 }
 
 inline bool is_end_of_string(const char c) {
-	return !(c == '\n' || c == '\0');
+	return (c == '\n' || c == '\0');
 }
 
 int find_next_nonspace(const char* p) {
@@ -269,7 +299,7 @@ int find_next_nonspace(const char* p) {
 	do {
 		i++;
 		c = p[i];
-	} while (c == ' ' && is_end_of_string(c));
+	} while (c == ' ' && !is_end_of_string(c));
 	return i;
 }
 
@@ -279,8 +309,28 @@ int find_next_space(const char* p) {
 	do {
 		i++;
 		c = p[i];
-	} while (c != ' ' && is_end_of_string(c));
+	} while (c != ' ' && !is_end_of_string(c));
 	return i;
+}
+
+int string_to_number(char* p) {
+	char* ptr = p + find_next_nonspace(p);
+	bool is_negative = ptr[0] == '-'; // Negative numbers must have a negative sign.
+	int n = 0;
+	while (true) {
+		char c = *ptr;
+		ptr++;
+		if (c == ' ') {
+			continue;
+		}
+
+		if (c < '0' || '9' < c) {
+			return n;
+		}
+
+		n *= 10;
+		n += c - '0';
+	}
 }
 
 // 
@@ -350,6 +400,13 @@ bool parse_input_file(InputMap& map, String path) {
 			action.input = string_to_glfw_key(key);
 		} else if (type == 'J') {
 			action.is_keyboard = false;
+			
+			char* controller_number = key_p + i + 1;
+			controller_number += find_next_nonspace(controller_number);
+
+			if (!is_end_of_string(controller_number[0])) {
+				action.controller = string_to_number(controller_number);
+			}
 
 			action.input = string_to_joy(key);
 		} else {

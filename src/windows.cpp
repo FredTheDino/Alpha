@@ -73,14 +73,14 @@ inline ssize_t getline(char** lineptr, size_t *n, FILE* stream) {
 
 #include "main.cpp"
 
-unsigned long get_edit_time(const char* path) {
+unsigned long get_edit_time(const char* path, bool t) {
 	struct stat attrib;
 	auto error = stat(path, &attrib);
 	if (error) {
 		printf("[Hotloader.cpp] Failed to open asset '%s'!\n", path);
 		return 0;
 	}
-	
+
 	return attrib.st_mtime;
 }
 
@@ -94,7 +94,7 @@ CONTROLLER_TYPE get_controller_type_from_name(String name) {
 		printf("XBOX.\n");
 		return CONTROLLER_TYPE::XBOX;
 	}
-	
+
 	if (name == "Wireless Controller") {
 		printf("DS4\n");
 		return CONTROLLER_TYPE::DS4;
@@ -222,7 +222,7 @@ void handle_xbox (int id, Controller& c) {
 
 	const float* axies = glfwGetJoystickAxes(id, &count);
 
-	// Y is inverted since this is a copy from the 
+	// Y is inverted since this is a copy from the
 	// DS4 code, where the Y axies are flipped.
 	float left_x = axies[0];
 	float left_y = -axies[1];

@@ -5,6 +5,8 @@ enum SoundType {
 };
 
 struct Sound {
+	Sound() {};
+	Sound(String path);
 	// A buffer id.
 	ALuint buffer;
 	// The important header info.

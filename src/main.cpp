@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <float.h>
 // Doesn't work on windows.
 // #include <unistd.h>
 #include <assert.h>
@@ -36,16 +37,28 @@ typedef std::string String;
 
 // My stuff.
 #include "globals.h"
+#include "math.h"
+#include "physics.h"
 #include "graphics.h"
+#include "entity.h"
 
 Mesh quad_mesh;
 
+// Shaders.
+Shader color_shader;
+Shader post_process_shader;
+
 // My very own containers
 //#include "containers.cpp"
+#include "physics_helper.cpp"
+#include "physics.cpp"
 #include "graphics.cpp"
 #include "input.cpp"
 #include "audio.cpp"
 #include "entity.cpp"
+#include "entity_type.cpp"
+#include "level.h"
+#include "level.cpp"
 
 // Stuff with dependencies.
 #include "hotloader.cpp"
@@ -63,16 +76,16 @@ void window_close_callback(GLFWwindow* window) {
 }
 
 void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
-	set_window_info(new_width, new_height);
+	set_window_info(new_width, new_height, global.msaa);
 
 	glViewport(0, 0, new_width, new_height);
 
 #if POST_PROCESSING
 	glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
-	glViewport(0, 0, new_width, new_height);
 
-	const int w = new_width;
-	const int h = new_height;
+	const int w = global.sample_width;
+	const int h = global.sample_height;
+	glViewport(0, 0, w, h);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -92,8 +105,8 @@ void window_resize_callback(GLFWwindow* window, int new_width, int new_height) {
 
 void init_ppo() {
 
-	const int w = global.window_width;
-	const int h = global.window_height;
+	const int w = global.sample_width;
+	const int h = global.sample_height;
 	glGenTextures(1, &ppo.texture.texture_id);
 	glBindTexture(GL_TEXTURE_2D, ppo.texture.texture_id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -103,7 +116,7 @@ void init_ppo() {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 /*
- 	// OpenGL 3?
+	// OpenGL 3?
 	glGenRenderbuffers(1, &ppo.depth);
 	glBindRenderbuffer(GL_RENDERBUFFER, ppo.depth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
@@ -128,8 +141,7 @@ void init_ppo() {
 		printf("Failed to create frame buffer\n");
 }
 
-void game_main() {
-	// Initalize window.
+inline void init_engine() {
 	if (!glfwInit()) {
 		printf("[Init] Failed to initalize GLFW - Window and IO lib.");
 		assert(0);
@@ -142,10 +154,8 @@ void game_main() {
 
 	glfwSetWindowCloseCallback(global.window, window_close_callback);
 	glfwSetWindowSizeCallback(global.window, window_resize_callback);
-	// This doesn't seem to work properly
-	//glfwSetJoystickCallback(controller_connect_callback);
-
-	glfwMakeContextCurrent(global.window);	
+	glfwMakeContextCurrent(global.window);
+	glfwSetInputMode(global.window, GLFW_STICKY_KEYS, 1);
 
 	// @FIXME, we dont allow this to be set ATM, that would probably be smart.
 	glfwSwapInterval(1);
@@ -158,32 +168,23 @@ void game_main() {
 	/////////////
 	// INIT GL //
 	/////////////
-	
-	// GL default settings.
 	printf("[OpenGL] Version: %s\n", glGetString(GL_VERSION));
 	printf("[OpenGL] Vendor: %s\n", glGetString(GL_VENDOR));
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.3, 0.8, 0.4, 1.0);
 
 #if POST_PROCESSING
 	init_ppo();
 #endif
-
-	glClearColor(0.9, 0.8, 0.21, 1.0);
-
-	/////////////
-	// INIT AL //
-	/////////////
 	init_audio();
+	window_resize_callback(global.window, global.window_width, global.window_height);
 
-	Sound ha;
-	register_hotloadable_asset(hot_loader, &ha, "res/a.wav");
-
-	// Load the input map!
 	register_hotloadable_asset(hot_loader, &input_map, "res/input.map");
 
+	// Init the graphics
 	Array<Vertex> verticies;
 	verticies.reserve(6);
 
@@ -196,93 +197,121 @@ void game_main() {
 	verticies.push_back(Vertex(-0.5, -0.5, 0, 1));
 
 	quad_mesh = new_mesh(verticies);
-	Shader color_shader;
-	register_hotloadable_asset(hot_loader, &color_shader, "res/2d_color.glsl", "2d_color");
-	Shader post_process_shader;
-	register_hotloadable_asset(hot_loader, &post_process_shader, "res/post_process.glsl", "post");
 
-	Texture mario;
-	register_hotloadable_asset(hot_loader, &mario, "res/mario");
+	color_shader = Shader("res/2d_color.glsl", "2d_color");
+	post_process_shader = Shader("res/post_process.glsl", "post");
+}
 
-	make_test_component(13);
-	make_test_component(1.2343f);
+void set_aa(int msaa) {
+	if (msaa < 1) msaa = 1;
+	global.msaa = msaa;
+	window_resize_callback(global.window, global.window_width, global.window_height);
+}
+
+void game_main() {
+	init_engine();
+
+	// Disables text buffering...
+	setbuf(stdout, NULL);
+
+	Level level = load_level(entity_list, engine, "res/level");
+	printf("askdjha\n");
+
+	// Load stuff
+	Sound ha("res/a.wav");
+
+	// Load font test!
+	auto droid_sans = load_font_from_files("res/fonts/droid_sans");
+	auto text_mesh = new_text_mesh(droid_sans, "Hello World");
+
+	main_camera.zoom = 4;
+	add_entity(entity_list, new_camera_controller());
 
 	float t = 0.0f;
-	float delta = 0.0f;
-	glfwSetTime(0);
+	float buffer = 0;
+	float delta = 1.0f / 420.0f;
+	int frame = 0;
+	glfwSetTime(t);
+
+	printf("A\n");
+
+	// It's clearing the entity list right after loading... I think...
+	// It doesn't do that on Linux... it's super wierd...
+
 	while (!global.should_quit) {
 		float new_t = glfwGetTime();
-		delta = t - new_t;
+		buffer += new_t - t;
 		t = new_t;
 
-		glfwPollEvents();
+		while (delta < buffer) {
+			buffer -= delta;
+			frame++;
+			glfwPollEvents();
 
-		update_loader(hot_loader);
+			update_input();
 
-		update_input();
+			update_loader(hot_loader);
 
-		update_system(all_systems, delta);
+			update_physics_engine(engine, delta);
 
-		update_audio();
+			update_audio();
 
-		draw_system(all_systems);
+			// Begining of update.
+			update_entities(entity_list, delta);
 
-		if (is_down("exit")) {
-			global.should_quit = true;
-		}
+			gc_entities(entity_list); // This doesn't need to be run everyframe.
 
-		if (pressed("sound")) {
-			play_sound(ha, SFX);
+			if (is_down("exit")) {
+				global.should_quit = true;
+			}
+			if (pressed("reload")) {
+				reload_level(level);
+				add_entity(entity_list, new_camera_controller());
+			}
 		}
 
 #if POST_PROCESSING
 		glBindFramebuffer(GL_FRAMEBUFFER, ppo.buffer);
 #endif
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+		{
+			// Setup graphics
+			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+			use_shader(color_shader);
+			send_camera_to_shader(color_shader);
 
-		use_shader(color_shader);
-		
-		main_camera.position.x += delta * value("right");
-		main_camera.position.x -= delta * value("left");
-		main_camera.position.y += delta * value("up");
-		main_camera.position.y -= delta * value("down");
+			debug_draw_engine(color_shader, engine);
+			draw_entities(entity_list, frame * delta);
+		}
 
-		main_camera.rotation += delta * value("turn");
-
-		main_camera.zoom /= 1 + delta * value("zoom_in");
-		main_camera.zoom *= 1 + delta * value("zoom_out");
-
-		send_camera_to_shader(color_shader);
-
-		float x = sin(t);
-
-		draw_sprite(color_shader, mario, Vec2(x, 0));
-
-		float c = cos(t * 0.2);
-
-		draw_sprite(color_shader, mario, Vec2(-0.2, x * 0.2), Vec2(1, c), c, Vec4(1.1, 1.1, 0.1, 0.5), x);
-
-		
 		// Post processing.
 #if POST_PROCESSING
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		use_shader(post_process_shader);
-		GLuint screen_location = glGetUniformLocation(post_process_shader.program, "screen");
-		bind_texture(ppo.texture, 0);
-		glUniform1i(screen_location, 0);
+			use_shader(post_process_shader);
+			GLuint screen_location = glGetUniformLocation(post_process_shader.program, "screen");
+			bind_texture(ppo.texture, 0);
+			glUniform1i(screen_location, 0);
 
-		glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), t);
+			glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), frame * delta);
+			glUniform2f(glGetUniformLocation(post_process_shader.program, "sample_size"),
+					1.0f / global.sample_width, 1.0f / global.sample_height);
+			glUniform1i(glGetUniformLocation(post_process_shader.program, "msaa"), global.msaa);
 
-		draw_mesh(quad_mesh);
+			draw_mesh(quad_mesh);
+		}
 #endif
 
 		glfwSwapBuffers(global.window);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	}
 
-	delete_texture(mario);
 	delete_shader(color_shader);
+#if POST_PROCESSING
+	delete_shader(post_process_shader);
+#endif
 
 	destroy_audio();
+
+	clear_level(level);
 }
