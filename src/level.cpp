@@ -106,7 +106,6 @@ Entity load_level_entity(Level& l, String type, String line) {
 		if (sl.size() < 4)
 			return Entity();
 
-		printf("Adding body: %s\n", line.c_str());
 		Shape* s = get_shape_from_level(l, sl[3]);
 
 		if (s == nullptr)

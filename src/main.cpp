@@ -215,7 +215,6 @@ void game_main() {
 	setbuf(stdout, NULL);
 
 	Level level = load_level(entity_list, engine, "res/level");
-	printf("askdjha\n");
 
 	// Load stuff
 	Sound ha("res/a.wav");
@@ -232,8 +231,6 @@ void game_main() {
 	float delta = 1.0f / 420.0f;
 	int frame = 0;
 	glfwSetTime(t);
-
-	printf("A\n");
 
 	// It's clearing the entity list right after loading... I think...
 	// It doesn't do that on Linux... it's super wierd...
