@@ -154,7 +154,7 @@ inline void init_engine() {
 
 	glfwSetWindowCloseCallback(global.window, window_close_callback);
 	glfwSetWindowSizeCallback(global.window, window_resize_callback);
-	glfwMakeContextCurrent(global.window);	
+	glfwMakeContextCurrent(global.window);
 	glfwSetInputMode(global.window, GLFW_STICKY_KEYS, 1);
 
 	// @FIXME, we dont allow this to be set ATM, that would probably be smart.
@@ -215,7 +215,8 @@ void game_main() {
 	setbuf(stdout, NULL);
 
 	Level level = load_level(entity_list, engine, "res/level");
-	
+	printf("askdjha\n");
+
 	// Load stuff
 	Sound ha("res/a.wav");
 
@@ -231,6 +232,12 @@ void game_main() {
 	float delta = 1.0f / 420.0f;
 	int frame = 0;
 	glfwSetTime(t);
+
+	printf("A\n");
+
+	// It's clearing the entity list right after loading... I think...
+	// It doesn't do that on Linux... it's super wierd...
+
 	while (!global.should_quit) {
 		float new_t = glfwGetTime();
 		buffer += new_t - t;
@@ -239,7 +246,6 @@ void game_main() {
 		while (delta < buffer) {
 			buffer -= delta;
 			frame++;
-
 			glfwPollEvents();
 
 			update_input();
@@ -288,7 +294,7 @@ void game_main() {
 			glUniform1i(screen_location, 0);
 
 			glUniform1f(glGetUniformLocation(post_process_shader.program, "time"), frame * delta);
-			glUniform2f(glGetUniformLocation(post_process_shader.program, "sample_size"), 
+			glUniform2f(glGetUniformLocation(post_process_shader.program, "sample_size"),
 					1.0f / global.sample_width, 1.0f / global.sample_height);
 			glUniform1i(glGetUniformLocation(post_process_shader.program, "msaa"), global.msaa);
 
@@ -306,4 +312,6 @@ void game_main() {
 #endif
 
 	destroy_audio();
+
+	clear_level(level);
 }

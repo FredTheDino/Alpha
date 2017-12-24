@@ -17,7 +17,7 @@ Shape::Shape(PhysicsEngine& engine, Array<Vec2> points) {
 	this->bounds = project_along(this, engine.broad_phase_normal);
 }
 
-Shape::Shape(PhysicsEngine& engine, Array<Vec2> points, Array<Vec2> normals): 
+Shape::Shape(PhysicsEngine& engine, Array<Vec2> points, Array<Vec2> normals):
 	points(points), normals(normals) {
 	this->bounds = project_along(this, engine.broad_phase_normal);
 };
@@ -63,9 +63,9 @@ BodyID add_body(PhysicsEngine& engine, Body b, Shape* s) {
 }
 
 Body* find_body(PhysicsEngine& engine, BodyID id) {
-	if (id.pos < 0) 
+	if (id.pos < 0)
 		return nullptr;
-	if (engine.bodies.size() < id.pos) 
+	if (engine.bodies.size() < id.pos)
 		return nullptr;
 
 	const Body& b = engine.bodies[id.pos];
@@ -88,7 +88,7 @@ bool remove_body(PhysicsEngine& engine, BodyID id) {
 
 	b->id.uid = -engine.next_free;
 	engine.next_free = b->id.pos;
-	
+
 	for (int i = 0; i < engine.bounds.size(); i++) {
 		if (engine.bounds[i].id.pos == id.pos) {
 			engine.bounds.erase(engine.bounds.begin() + i);
@@ -118,8 +118,8 @@ bool collision_check(Collision* c) {
 
 	c->overlap = FLT_MAX;
 
-	Vec2 delta_pos = 
-		(a.position + a.shape->offset) - 
+	Vec2 delta_pos =
+		(a.position + a.shape->offset) -
 		(b.position + b.shape->offset);
 
 
@@ -165,7 +165,7 @@ void update_bounds(PhysicsEngine& engine, Array<Bound>& list) {
 	for (auto& b : list) {
 		Body& body = *find_body(engine, b.id);
 
-		float projection = 
+		float projection =
 			dot(body.position + body.shape->offset, engine.broad_phase_normal);
 		b.v = Vec2(projection, projection) + body.shape->bounds;
 	}
@@ -193,7 +193,7 @@ void solve_ds(Collision& c) {
 		s = c.b;
 		normal = -c.normal;
 	}
-	
+
 	// Move the dynamic body
 	d->position = d->position + normal * c.overlap * c.margin;
 
@@ -213,7 +213,7 @@ void solve_dd(Collision& c) {
 	float b_distnace = inverted_total_mass * b->mass * c.overlap;
 	a->position = a->position - c.normal * a_distnace * c.margin;
 	b->position = b->position + c.normal * b_distnace * c.margin;
-	
+
 	// We're done if they're not gonna collide.
 	if (dot(a->velocity, b->velocity) > 0) return; // Shouldn't this be the other way around?
 
@@ -226,23 +226,24 @@ void solve_dd(Collision& c) {
 
 void update_physics_engine(PhysicsEngine& engine, float delta) {
 	for (Body& b : engine.bodies) {
+		if (!b.alive) continue;
 		b.collisions.clear();
 		if (b.mass == 0) continue;
 		b.velocity = b.velocity + engine.gravity * delta;
 		b.position = b.position + b.velocity * delta;
-	}	
+	}
 
 	update_bounds(engine, engine.bounds);
 
 	int num_potential_collisions = 0;
 	int num_collisions = 0;
 
+	//printf("%d\n", engine.bounds.size());
 	for (int step = 0; step < engine.itterations; step++) {
-		for (int i = 0; i < engine.bounds.size() - 1; i++) {
+		for (int i = 0; i + 1 < engine.bounds.size(); i++) {
 			Bound bound_a = engine.bounds[i];
 
 			for (int j = i + 1; j < engine.bounds.size(); j++) {
-
 				Bound bound_b = engine.bounds[j];
 				if (bound_a.v._[1] <= bound_b.v._[0]) break;
 
@@ -250,6 +251,9 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 
 				Body* a = find_body(engine, bound_a.id);
 				Body* b = find_body(engine, bound_b.id);
+
+				if (a == nullptr || b == nullptr) continue;
+				if (!a->alive || !b->alive) continue;
 
 				if (!can_collide(*a, *b)) continue;
 

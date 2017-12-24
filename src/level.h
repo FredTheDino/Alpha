@@ -1,6 +1,5 @@
 struct Level {
 	Level(EntityList* e, PhysicsEngine* p) : list(e), engine(p) {};
-	~Level();
 
 	EntityList* list;
 	PhysicsEngine* engine;

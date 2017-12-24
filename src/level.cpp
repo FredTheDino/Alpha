@@ -1,7 +1,7 @@
 Shape* get_shape_from_level(Level& l, String shape) {
 	auto it = l.shapes.find(shape);
 	if (it == l.shapes.end()) {
-		printf("Trying to find unknown shape '%s' when loading level\n", 
+		printf("Trying to find unknown shape '%s' when loading level\n",
 				shape.c_str());
 		return nullptr;
 	}
@@ -11,7 +11,7 @@ Shape* get_shape_from_level(Level& l, String shape) {
 Texture get_texture_from_level(Level& l, String texture) {
 	auto it = l.textures.find(texture);
 	if (it == l.textures.end()) {
-		printf("Trying to find unknown texture '%s' when loading level\n", 
+		printf("Trying to find unknown texture '%s' when loading level\n",
 				texture.c_str());
 		return Texture();
 	}
@@ -66,11 +66,13 @@ Texture load_level_texture(String line) {
 
 Entity load_level_entity(Level& l, String type, String line) {
 	auto sl = split(line, ',', ';', ' ');
-	
+
+
+
 	if (type == "PLAYER") {
-		if (sl.size() < 4) 
+		if (sl.size() < 4)
 			return Entity();
-		
+
 		Shape* s = get_shape_from_level(l, sl[2]);
 		if (s == nullptr)
 			return Entity();
@@ -86,7 +88,7 @@ Entity load_level_entity(Level& l, String type, String line) {
 				);
 
 	} else if (type == "SPRITE") {
-		if (sl.size() < 7) 
+		if (sl.size() < 7)
 			return Entity();
 
 		Texture t = get_texture_from_level(l, sl[5]);
@@ -101,9 +103,10 @@ Entity load_level_entity(Level& l, String type, String line) {
 				stoi(sl[6])
 				);
 	} else if (type == "BODY") {
-		if (sl.size() < 4) 
+		if (sl.size() < 4)
 			return Entity();
 
+		printf("Adding body: %s\n", line.c_str());
 		Shape* s = get_shape_from_level(l, sl[3]);
 
 		if (s == nullptr)
@@ -116,7 +119,7 @@ Entity load_level_entity(Level& l, String type, String line) {
 				);
 
 	}
-	
+
 	return Entity();
 }
 
@@ -125,16 +128,13 @@ void clear_level(Level& l) {
 	clear(*l.list);
 
 	for (auto it : l.shapes) {
+		if (it.second == nullptr) continue;
 		delete it.second;
 	}
 
 	for (auto it : l.textures) {
 		delete_texture(it.second);
 	}
-}
-
-Level::~Level() {
-	clear_level(*this);
 }
 
 
@@ -154,10 +154,13 @@ bool load_level(Level& l) {
 		line = nullptr;
 
 		getline(&line, &line_size, file);
+		if (line == nullptr) continue;
 		if (line[0] == '\n') continue;
 
 		split_line.clear();
 		split(String(line), split_line, ':');
+
+		//printf("l: %s", line);
 
 		switch (split_line[0][0]) {
 			case 's': {
@@ -195,7 +198,7 @@ void reload_level(Level& l) {
 	load_level(l);
 }
 
-Level load_level(EntityList& list, 
+Level load_level(EntityList& list,
 		PhysicsEngine& engine, String path) {
 
 	Level l(&list, &engine);
