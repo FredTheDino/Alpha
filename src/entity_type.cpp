@@ -17,9 +17,11 @@ struct Player {
 	Vec2 position;
 	BodyID body;
 
-	float run_acceleration = 500;
-	float max_speed = 500;
-	float jump_vel = 1;
+	float run_acceleration = 5000;
+	float max_speed = 1750;
+	float jump_vel = 4;
+	float gravity = 9;
+	float hover = 0.3f;
 
 	int facing_direction = 0;
 	int last_moved_direction = 1;
@@ -88,6 +90,26 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 		Player& p = *(Player*) e->data;
 		Body& b = *find_body(engine, p.body);
 
+		bool grounded = false;
+		bool is_dynamic = false;
+		Vec2 upp_vec;
+		Vec2 forward_vec = Vec2(1, 0);
+		for (auto c : b.collisions) {
+			if (dot(c.selected_normal, Vec2(0, 1)) > 0.1f) {
+				grounded = true;
+				upp_vec = c.selected_normal;
+				forward_vec = Vec2(upp_vec.y);
+				
+				if (c.id_b.pos == b.id.pos) {
+					is_dynamic = c.a->mass != 0;
+				} else {
+					is_dynamic = c.b->mass != 0;
+				}
+
+				break;
+			}
+		}
+
 		if (is_down("right")) {
 			p.last_moved_direction = 1;
 			p.facing_direction = 1;
@@ -95,26 +117,32 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 		} else if (is_down("left")) {
 			p.last_moved_direction = -1;
 			p.facing_direction = -1;
-			p.speed += delta * p.run_acceleration * (value("left"));
+			p.speed -= delta * p.run_acceleration * (value("left"));
 		} else {
-			p.speed -= p.run_acceleration * 1.5f * delta;
+			p.speed -= sign(p.speed) * p.run_acceleration * 1.5f * delta;
 			p.facing_direction = 0;
 		}
 
-		p.speed = clamp(p.speed, 0, p.max_speed);
-		b.velocity.x = p.speed * p.last_moved_direction * delta;
+		p.speed = clamp(p.speed, -p.max_speed, p.max_speed);
+		b.velocity.x = forward_vec.x * p.speed * delta;
+		b.velocity.y -= p.gravity * delta;
 
-		bool grounded = false;
-		for (auto c : b.collisions) {
-			if (dot(c.selected_normal, Vec2(0, 1)) > 0.75f) {
-				grounded = true;
-				break;
-			}
-		}
-
+		bool jumped = false;
 		if (grounded && pressed("jump")) {
 			b.velocity.y = p.jump_vel;
+			jumped = true;
 		}
+
+		if (!grounded && is_down("jump") && b.velocity.y > 0) {
+			b.velocity.y += p.gravity * p.hover * delta;
+			jumped = true;
+		}
+
+		if (grounded && !jumped && !is_dynamic) {
+			b.velocity = b.velocity - upp_vec * 1000 * delta;
+		}
+
+
 
 		// Needed for rendering.
 		p.position = b.position;
@@ -171,8 +199,7 @@ Entity new_camera_controller() {
 		if (body == nullptr)
 			return;
 
-		Vec2 delta_pos = body->velocity * 1.1f + ((Player*) player->data)->position -
-			main_camera.position;
+		Vec2 delta_pos = ((Player*) player->data)->position - main_camera.position;
 		main_camera.position = main_camera.position + delta_pos * delta;
 	};
 

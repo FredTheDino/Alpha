@@ -6,29 +6,21 @@ right K d
 up    K w
 down  K s
 
-reload K r
+left K left
+right K right
 
+
+jump K up
 jump K space
-
-turn  K x
-turn  J R1
-zoom_in K e
-zoom_in J R2
-zoom_out K q
-zoom_out J L2
 
 toggle_aa K p
 
-sound K h
-sound J CROSS 0
-sound J SQUARE 1
-sound J TRIANGLE
-
-some_other J LEFT_UP
 left  J LEFT_LEFT 
-left  J RIGHT_LEFT 
 right J LEFT_RIGHT 
-right J RIGHT_RIGHT 
-
 up J LEFT_UP 
 down J LEFT_DOWN
+
+jump J CROSS
+
+reload J START
+reload K r

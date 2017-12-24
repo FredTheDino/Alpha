@@ -223,7 +223,7 @@ void game_main() {
 	auto droid_sans = load_font_from_files("res/fonts/droid_sans");
 	auto text_mesh = new_text_mesh(droid_sans, "Hello World");
 
-	main_camera.zoom = 4;
+	main_camera.zoom = 6;
 	add_entity(entity_list, new_camera_controller());
 
 	float t = 0.0f;

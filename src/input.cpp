@@ -248,6 +248,10 @@ int string_to_glfw_key(String& key) {
 	TO_KEY_ENUM(ESCAPE);
 	TO_KEY_ENUM(ENTER);
 	TO_KEY_ENUM(SPACE);
+	TO_KEY_ENUM(LEFT);
+	TO_KEY_ENUM(RIGHT);
+	TO_KEY_ENUM(UP);
+	TO_KEY_ENUM(ESCAPE);
 
 	printf("Unknown key: %s\n", key.c_str());
 	return -1;

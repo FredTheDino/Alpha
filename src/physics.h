@@ -27,7 +27,6 @@ struct Body {
 	int8_t mask  = 0b11111111;
 	bool alive   = false;
 	bool is_trigger = false;
-
 	// Rotation or scale isn't implemented in the 
 	// collision test yet...
 

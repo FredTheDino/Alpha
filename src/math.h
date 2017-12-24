@@ -145,3 +145,11 @@ float clamp(float v, float _min, float _max) {
 	return max(min(v, _max), _min);
 }
 
+float sign(float s) {
+	if (s == 0)
+		return 0;
+	if (s < 0)
+		return -1.0f;
+	return 1.0f;
+}
+
