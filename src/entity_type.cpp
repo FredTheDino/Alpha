@@ -17,7 +17,11 @@ struct Player {
 	Vec2 position;
 	BodyID body;
 
-	float run_acceleration = 5000;
+	float run_acc = 7000;
+	float run_slow_down = 10000;
+	float air_acc = 4000;
+	float air_slow_down = 2000;
+
 	float max_speed = 1750;
 	float jump_vel = 4;
 	float gravity = 9;
@@ -110,21 +114,37 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 			}
 		}
 
-		if (is_down("right")) {
-			p.last_moved_direction = 1;
-			p.facing_direction = 1;
-			p.speed += delta * p.run_acceleration * (value("right"));
-		} else if (is_down("left")) {
-			p.last_moved_direction = -1;
-			p.facing_direction = -1;
-			p.speed -= delta * p.run_acceleration * (value("left"));
+		if (grounded) {
+			if (is_down("right")) {
+				p.last_moved_direction = 1;
+				p.facing_direction = 1;
+				p.speed += delta * p.run_acc * (value("right"));
+			} else if (is_down("left")) {
+				p.last_moved_direction = -1;
+				p.facing_direction = -1;
+				p.speed -= delta * p.run_acc * (value("left"));
+			} else {
+				p.speed -= sign(p.speed) * p.run_slow_down * delta;
+				p.facing_direction = 0;
+			}
 		} else {
-			p.speed -= sign(p.speed) * p.run_acceleration * 1.5f * delta;
-			p.facing_direction = 0;
+			if (is_down("right")) {
+				p.last_moved_direction = 1;
+				p.facing_direction = 1;
+				p.speed += delta * p.air_acc * (value("right"));
+			} else if (is_down("left")) {
+				p.last_moved_direction = -1;
+				p.facing_direction = -1;
+				p.speed -= delta * p.air_acc * (value("left"));
+			} else {
+				p.speed -= sign(p.speed) * p.air_slow_down * 1.5f * delta;
+				p.facing_direction = 0;
+			}
+			
 		}
 
 		p.speed = clamp(p.speed, -p.max_speed, p.max_speed);
-		b.velocity.x = forward_vec.x * p.speed * delta;
+		b.velocity.x = forward_vec.x *  p.speed * delta;
 		b.velocity.y -= p.gravity * delta;
 
 		bool jumped = false;
