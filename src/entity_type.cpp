@@ -94,6 +94,11 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 		Player& p = *(Player*) e->data;
 		Body& b = *find_body(engine, p.body);
 
+		/*
+		Player* px = (Player*)((void*)0);
+		px->last_moved_direction = 0;
+		*/
+
 		bool grounded = false;
 		bool is_dynamic = false;
 		Vec2 upp_vec;
@@ -103,7 +108,7 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 				grounded = true;
 				upp_vec = c.selected_normal;
 				forward_vec = Vec2(upp_vec.y);
-				
+
 				if (c.id_b.pos == b.id.pos) {
 					is_dynamic = c.a->mass != 0;
 				} else {
@@ -140,7 +145,7 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 				p.speed -= sign(p.speed) * p.air_slow_down * 1.5f * delta;
 				p.facing_direction = 0;
 			}
-			
+
 		}
 
 		p.speed = clamp(p.speed, -p.max_speed, p.max_speed);

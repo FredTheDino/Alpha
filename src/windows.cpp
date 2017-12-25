@@ -8,7 +8,7 @@
 // (I wonder if I actually need this file...)
 // (Yes you do...)
 //
-
+#define WINDOWS
 #include "win_unistd.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -9,6 +9,7 @@
 // (Yes you do...)
 //
 
+#define LINUX
 #include <unistd.h>
 #include "main.cpp"
 
@@ -25,7 +26,7 @@ unsigned long get_edit_time(const char* path, bool silent) {
 			printf("[Hotloader.cpp] Failed to open asset '%s'!\n", path);
 		return 0;
 	}
-	
+
 	return attrib.st_ctime;
 }
 
@@ -34,7 +35,7 @@ CONTROLLER_TYPE get_controller_type_from_name(String name) {
 		printf("DS3.\n");
 		return CONTROLLER_TYPE::DS3;
 	}
-	
+
 	if (name == "Sony Computer Entertainment Wireless Controller") {
 		printf("DS4\n");
 		return CONTROLLER_TYPE::DS4;
