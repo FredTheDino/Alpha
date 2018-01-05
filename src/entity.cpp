@@ -34,7 +34,6 @@ EntityID add_entity(EntityList& list, String name, Entity e) {
 	id = add_entity(list, e);
 	list.name_to_id[name] = id;
 
-	printf("Added entity %s@%d:%d\n", name.c_str(), id.pos, id.uid);
 	return id;
 }
 

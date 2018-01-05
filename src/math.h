@@ -118,8 +118,16 @@ Vec2 rotate(Vec2 v, float angle) {
 			v.x * s + v.y * c);
 }
 
+float length_sq(Vec2 v) {
+	return v.x * v.x + v.y * v.y;
+}
+
+float length(Vec2 v) {
+	return sqrt(length_sq(v));
+}
+
 Vec2 normalize(Vec2 v) {
-	float scale = 1.0 / sqrt(v.x * v.x + v.y * v.y);
+	float scale = 1.0 / length(v);
 	return v * scale;
 }
 

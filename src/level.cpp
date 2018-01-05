@@ -103,17 +103,19 @@ Entity load_level_entity(Level& l, String type, String line) {
 				stoi(sl[6])
 				);
 	} else if (type == "BODY") {
-		if (sl.size() < 4)
+		if (sl.size() < 6)
 			return Entity();
 
-		Shape* s = get_shape_from_level(l, sl[3]);
+		Shape* s = get_shape_from_level(l, sl[5]);
 
 		if (s == nullptr)
 			return Entity();
 
 		return new_body_entity(
 				parse_vec2(sl[0], sl[1]),
-				stof(sl[2]),
+				stoi(sl[2]),
+				stof(sl[3]),
+				stoi(sl[4]),
 				s
 				);
 

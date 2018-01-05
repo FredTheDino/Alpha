@@ -48,6 +48,9 @@ Mesh quad_mesh;
 Shader color_shader;
 Shader post_process_shader;
 
+// Fonts
+Font droid_sans;
+
 // My very own containers
 //#include "containers.cpp"
 #include "physics_helper.cpp"
@@ -220,7 +223,7 @@ void game_main() {
 	Sound ha("res/a.wav");
 
 	// Load font test!
-	auto droid_sans = load_font_from_files("res/fonts/droid_sans");
+	droid_sans = load_font_from_files("res/fonts/droid_sans");
 	auto text_mesh = new_text_mesh(droid_sans, "Hello World");
 
 	main_camera.zoom = 6;

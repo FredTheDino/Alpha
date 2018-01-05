@@ -227,6 +227,7 @@ void solve_dd(Collision& c) {
 void update_physics_engine(PhysicsEngine& engine, float delta) {
 	for (Body& b : engine.bodies) {
 		if (!b.alive) continue;
+		b.hit_tags = 0;
 		b.collisions.clear();
 		if (b.mass == 0) continue;
 		b.velocity = b.velocity + engine.gravity * delta;
@@ -263,10 +264,18 @@ void update_physics_engine(PhysicsEngine& engine, float delta) {
 				c.id_a = a->id;
 				c.id_b = b->id;
 				c.margin = engine.margin;
+				
+				a->hit_tags |= b->tag;
+				b->hit_tags |= a->tag;
+				
+				c.tag = a->tag | b->tag;
 
 				if (!collision_check(&c)) continue;
 
-				if (!a->is_trigger && !b->is_trigger) {
+				if (a->is_trigger || b->is_trigger) {
+					c.is_trigger = true;
+				} else {
+					c.is_trigger = false;
 					bool is_ds = a->mass == 0 || b->mass == 0;
 
 					if (is_ds)

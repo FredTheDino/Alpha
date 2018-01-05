@@ -23,9 +23,11 @@ struct BodyID {
 struct Body {
 	BodyID id;
 
-	Shape* shape = nullptr;
-	int8_t mask  = 0b11111111;
-	bool alive   = false;
+	Shape* shape    = nullptr;
+	int8_t mask     = 0b11111111;
+	int8_t hit_tags = 0b00000000;
+	int8_t tag      = 0b00000000;
+	bool alive      = false;
 	bool is_trigger = false;
 	// Rotation or scale isn't implemented in the 
 	// collision test yet...
@@ -53,6 +55,9 @@ struct Collision {
 
 	Vec2 normal;
 	Vec2 selected_normal;
+
+	int8_t tag;
+	bool is_trigger;
 
 	float overlap;
 	float impulse;
