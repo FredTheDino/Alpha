@@ -19,21 +19,22 @@ struct Player {
 
 	float run_acc = 20000;
 	float run_slow_down = 15000;
-	float air_acc = 7000;
-	float air_slow_down = 3000;
+	float air_acc = 1000;
+	float air_slow_down = 500;
 
-	float max_speed = 1750;
+	float max_speed = 3000;
 	int jump_count = 0;
-	float first_jump_vel = 6.5;
-	float second_jump_vel = 5.5;
+	bool has_jumped = false;
+	float first_jump_vel = 5.5;
+	float second_jump_vel = 4.5;
 	float gravity = 15;
-	float hover = 0.3f;
+	float hover = 5;
 
 	int facing_direction = 0;
-	int last_moved_direction = 1;
 
 	float speed;
 	float speed_delta;
+	bool grounded;
 };
 
 //
@@ -97,11 +98,6 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 		Player& p = *(Player*) e->data;
 		Body& b = *find_body(engine, p.body);
 
-		/*
-		Player* px = (Player*)((void*)0);
-		px->last_moved_direction = 0;
-		*/
-
 		bool grounded = false;
 		bool is_dynamic = false;
 		Vec2 upp_vec;
@@ -125,37 +121,21 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 		}
 		
 
-		if (grounded) {
-			if (is_down("right") && !is_down("left")) {
-				p.last_moved_direction = 1;
-				p.facing_direction = 1;
-				p.speed += delta * p.run_acc * value("right");
-			} else if (is_down("left") && !is_down("right")) {
-				p.last_moved_direction = -1;
-				p.facing_direction = -1;
-				p.speed -= delta * p.run_acc * value("left");
-			} else {
-				p.speed -= sign(p.speed) * p.run_slow_down * delta;
-				p.facing_direction = 0;
-			}
-		} else {
-			if (is_down("right")) {
-				p.last_moved_direction = 1;
-				p.facing_direction = 1;
-				p.speed += delta * p.air_acc * (value("right"));
-			} else if (is_down("left")) {
-				p.last_moved_direction = -1;
-				p.facing_direction = -1;
-				p.speed -= delta * p.air_acc * (value("left"));
-			} else {
-				p.speed -= sign(p.speed) * p.air_slow_down * 1.5f * delta;
-				p.facing_direction = 0;
-			}
+		float acc = p.run_acc;
+		float slow_down = p.run_slow_down;
+		if (!grounded) {
+			acc = p.air_acc;
+			slow_down = p.air_slow_down;
 		}
 
-		p.speed = clamp(p.speed, -p.max_speed, p.max_speed);
-		b.velocity.x = forward_vec.x * p.speed * delta;
-		b.velocity.y -= p.gravity * delta;
+		float dir = value("right") - value("left");
+		if (dir) {
+			p.speed += delta * acc * dir;
+			p.facing_direction = sign(dir);
+		} else {
+			p.speed -= sign(p.speed) * slow_down * delta;
+		}
+
 
 		// Water calculations
 		bool in_water = false;
@@ -165,17 +145,42 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 				if (c.overlap > 0.5f) {
 					in_water = true;
 				} else {
-					if (dot(b.velocity, c.selected_normal) > 0) continue;
 					Vec2 up = c.selected_normal;
 					Vec2 forward = Vec2(-up.y, up.x);
 
+					float vertical_overlap = dot(b.velocity, up);
+					float horizontal_overlap = dot(b.velocity, forward);
+
+					float slope = vertical_overlap / horizontal_overlap;
+					float vel = length_sq(b.velocity);
+
+					if ((0 < slope || slope < -1.0f) && vel > 10) {
+						continue;
+					}
+
+					float magic_number = 0.30;
+					float d = horizontal_overlap * magic_number / delta;
+					p.speed -= d * sign(p.speed);
+
+					up = up * vertical_overlap * -2;
+					water_force = up;
 				}
 			}
 		}
 
-		p.speed_delta = p.speed * delta;
+		p.speed = clamp(p.speed, -p.max_speed, p.max_speed);
+		b.velocity.x = forward_vec.x * p.speed * delta;
+		b.velocity.y -= p.gravity * delta;
 
+		p.speed_delta = p.speed * delta;
 		b.velocity = b.velocity + water_force;
+
+		//
+		// @Cleanup, restructure this so this update call is cleaner.
+		// And add in some floating logic, maybe a bouancy factor and 
+		// storeing how emmersed the body is in water. 
+		//
+		// player_jump_logic(p, delta);
 
 		bool jumped = false;
 		if (p.jump_count < 2 && pressed("jump")) {
@@ -186,21 +191,24 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 			} else {
 				b.velocity.y = p.second_jump_vel;
 			}
+			p.has_jumped = true;
+			grounded = false;
 		}
 
-		if (!grounded && is_down("jump") && b.velocity.y > 0) {
-			b.velocity.y += p.gravity * p.hover * delta;
+		if (!grounded && is_down("jump") && b.velocity.y > 0 && p.has_jumped) {
+			b.velocity.y += p.hover * delta;
 			jumped = true;
+		} else {
+			p.has_jumped = false;
 		}
 
 		if (grounded && !jumped && !is_dynamic) {
 			b.velocity = b.velocity - upp_vec * 1000 * delta;
 		}
 
-
-
 		// Needed for rendering.
 		p.position = b.position;
+		p.grounded = grounded;
 	};
 
 	e.draw   = [](Entity* e, float t) {
@@ -208,8 +216,14 @@ Entity new_player(Vec2 position, Shape* shape, Texture texture) {
 
 		char speed[10];
 		sprintf(speed, "%0.2f", p->speed_delta);
+		char grounded[10];
+		sprintf(grounded, "g:%i", p->grounded);
 		auto m = new_text_mesh(droid_sans, speed);
 		draw_text(*p->s.shader, droid_sans, m, main_camera.position + Vec2(0, 5.5), {3, 3});
+		delete_mesh(m);
+
+		m = new_text_mesh(droid_sans, grounded);
+		draw_text(*p->s.shader, droid_sans, m, main_camera.position + Vec2(1, 5.5), {3, 3});
 		delete_mesh(m);
 
 		draw_sprite(*p->s.shader, p->s.texture,

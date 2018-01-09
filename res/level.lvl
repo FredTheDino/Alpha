@@ -13,9 +13,10 @@ e:SPRITE: 0, -1; 1, 1; 0; p_sprite; 0
 e:SPRITE: 1, -1; 1, 1; 1; p_sprite; 0
 e:SPRITE: 2, -1; 1, 1; 2; p_sprite; 0
 e:BODY: -6, 0.75; 1, 2, 3, lake;
-e:BODY: -3  , 1; 0, 0, 0, square;
-e:BODY: -1  , 1; 0, 0, 0, square;
-e:BODY:  1  , 1; 0, 0, 0, square;
-e:BODY:  3  , 1; 0, 0, 0, square;
-e:BODY:  5  , 3; 0, 0, 0, triangel;
-e:BODY: -5  , 1; 0, 0, 0, triangel;
+e:BODY:-11,    1; 0, 0, 0, square;
+e:BODY: -3,    1; 0, 0, 0, square;
+e:BODY: -1,    1; 0, 0, 0, square;
+e:BODY:  1,    1; 0, 0, 0, square;
+e:BODY:  3,    1; 0, 0, 0, square;
+e:BODY:  5,    3; 0, 0, 0, triangel;
+e:BODY: -5,    1; 0, 0, 0, triangel;
