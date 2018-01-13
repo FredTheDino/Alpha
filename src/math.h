@@ -93,6 +93,16 @@ struct Vec2 {
 		return Vec2(x - other.x, y - other.y);
 	}
 
+	void operator+= (const Vec2& other) {
+		x += other.x;
+		y += other.y;
+	}
+
+	void operator-= (const Vec2& other) {
+		x -= other.x;
+		y -= other.y;
+	}
+
 	Vec2 operator* (const float scale) const {
 		return Vec2(x * scale, y * scale);
 	}
@@ -135,22 +145,26 @@ float dot (const Vec2& a, const Vec2& b) {
 	return a.x * b.x + b.y * a.y;
 }
 
+Vec2 project(Vec2 a, Vec2 p) {
+	return p * dot(a, p);
+}
+
 struct Transform {
 	Vec2 position = {};
 	Vec2 scale = {1, 1};
 	float rotation = 0.0f;
 };
 
-float min(float v, float _min) {
-	return v < _min ? v : _min;
+float min(float a, float b) {
+	return a < b ? a : b;
 }
 
-float max(float v, float _max) {
-	return _max < v ? v : _max;
+float max(float a, float b) {
+	return b < a ? a : b;
 }
 
-float clamp(float v, float _min, float _max) {
-	return max(min(v, _max), _min);
+float clamp(float v, float a, float b) {
+	return max(min(v, b), a);
 }
 
 float sign(float s) {

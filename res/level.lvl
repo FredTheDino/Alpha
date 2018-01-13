@@ -2,7 +2,7 @@
 s:triangel: -1, -1; 1, -1; 1, 1
 s:square: -1, -1; 1, -1; 1, 1; -1, 1
 s:smal_square: -0.3, -0.5; 0.3, -0.5; 0.5, 1; -0.5, 1
-s:lake: -5.0, -0.5; 5.0, -0.5; 5.0, 1; -5.0, 1
+s:lake: -5.0, -10; 5.0, -10; 5.0, 1; -5.0, 1
 # Loads a texture
 t:p_sprite: res/mario; 1; 1, 1
 t:s_sprite: res/other; 1; 3, 1
@@ -12,8 +12,8 @@ e:PLAYER player: 0, 3; smal_square, s_sprite
 e:SPRITE: 0, -1; 1, 1; 0; p_sprite; 0
 e:SPRITE: 1, -1; 1, 1; 1; p_sprite; 0
 e:SPRITE: 2, -1; 1, 1; 2; p_sprite; 0
-e:BODY: -6, 0.75; 1, 2, 3, lake;
-e:BODY:-11,    1; 0, 0, 0, square;
+e:BODY: -9, 0.75; 1, 2, 3, lake;
+e:BODY:-15,    1; 0, 0, 0, square;
 e:BODY: -3,    1; 0, 0, 0, square;
 e:BODY: -1,    1; 0, 0, 0, square;
 e:BODY:  1,    1; 0, 0, 0, square;
